@@ -211,148 +211,152 @@ import com.sun.j3d.utils.universe.ViewingPlatform;
  */
 public class PlanComponent extends JComponent implements PlanView, Scrollable, Printable {
   /**
-   * The circumstances under which the home items displayed by this component will be painted. 
+   * The circumstances under which the home items displayed by this component will be painted.
    */
   protected enum PaintMode {PAINT, PRINT, CLIPBOARD, EXPORT}
-  
-  private enum ActionType {DELETE_SELECTION, ESCAPE, 
-      MOVE_SELECTION_LEFT, MOVE_SELECTION_UP, MOVE_SELECTION_DOWN, MOVE_SELECTION_RIGHT,
-      MOVE_SELECTION_FAST_LEFT, MOVE_SELECTION_FAST_UP, MOVE_SELECTION_FAST_DOWN, MOVE_SELECTION_FAST_RIGHT,
-      TOGGLE_MAGNETISM_ON, TOGGLE_MAGNETISM_OFF,
-      ACTIVATE_ALIGNMENT, DEACTIVATE_ALIGNMENT,
-      ACTIVATE_DUPLICATION, DEACTIVATE_DUPLICATION,       
-      ACTIVATE_EDITIION, DEACTIVATE_EDITIION}
-  
+
+  private enum ActionType {
+    DELETE_SELECTION, ESCAPE,
+    MOVE_SELECTION_LEFT, MOVE_SELECTION_UP, MOVE_SELECTION_DOWN, MOVE_SELECTION_RIGHT,
+    MOVE_SELECTION_FAST_LEFT, MOVE_SELECTION_FAST_UP, MOVE_SELECTION_FAST_DOWN, MOVE_SELECTION_FAST_RIGHT,
+    TOGGLE_MAGNETISM_ON, TOGGLE_MAGNETISM_OFF,
+    ACTIVATE_ALIGNMENT, DEACTIVATE_ALIGNMENT,
+    ACTIVATE_DUPLICATION, DEACTIVATE_DUPLICATION,
+    ACTIVATE_EDITIION, DEACTIVATE_EDITIION
+  }
+
   /**
    * Indicator types that may be displayed on selected items.
    */
   public static class IndicatorType {
     // Don't qualify IndicatorType as an enumeration to be able to extend IndicatorType class
-    public static final IndicatorType ROTATE        = new IndicatorType("ROTATE");
-    public static final IndicatorType RESIZE        = new IndicatorType("RESIZE");
-    public static final IndicatorType ELEVATE       = new IndicatorType("ELEVATE");
+    public static final IndicatorType ROTATE = new IndicatorType("ROTATE");
+    public static final IndicatorType RESIZE = new IndicatorType("RESIZE");
+    public static final IndicatorType ELEVATE = new IndicatorType("ELEVATE");
     public static final IndicatorType RESIZE_HEIGHT = new IndicatorType("RESIZE_HEIGHT");
-    public static final IndicatorType CHANGE_POWER  = new IndicatorType("CHANGE_POWER");
-    public static final IndicatorType MOVE_TEXT     = new IndicatorType("MOVE_TEXT");
-    public static final IndicatorType ROTATE_TEXT   = new IndicatorType("ROTATE_TEXT");
-    public static final IndicatorType ROTATE_PITCH  = new IndicatorType("ROTATE_PITCH");
+    public static final IndicatorType CHANGE_POWER = new IndicatorType("CHANGE_POWER");
+    public static final IndicatorType MOVE_TEXT = new IndicatorType("MOVE_TEXT");
+    public static final IndicatorType ROTATE_TEXT = new IndicatorType("ROTATE_TEXT");
+    public static final IndicatorType ROTATE_PITCH = new IndicatorType("ROTATE_PITCH");
 
     private final String name;
-    
+
     protected IndicatorType(String name) {
-      this.name = name;      
+      this.name = name;
     }
-    
+
     public final String name() {
       return this.name;
     }
-    
+
     @Override
     public String toString() {
       return this.name;
     }
-  };
+  }
 
-  private static final float    MARGIN = 40;
+  ;
 
-  private final Home            home;
+  private static final float MARGIN = 40;
+
+  private final Home home;
   private final UserPreferences preferences;
-  private float                 scale = 0.5f * SwingTools.getResolutionScale();
-  private boolean               selectedItemsOutlinePainted = true;
-  private boolean               backgroundPainted = true;
+  private float scale = 0.5f * SwingTools.getResolutionScale();
+  private boolean selectedItemsOutlinePainted = true;
+  private boolean backgroundPainted = true;
 
-  private PlanRulerComponent    horizontalRuler;
-  private PlanRulerComponent    verticalRuler;
-  
-  private final Cursor          rotationCursor;
-  private final Cursor          elevationCursor;
-  private final Cursor          heightCursor;
-  private final Cursor          powerCursor;
-  private final Cursor          resizeCursor;
-  private final Cursor          moveCursor;
-  private final Cursor          panningCursor;
-  private final Cursor          duplicationCursor;
-  
-  private Rectangle2D           rectangleFeedback;
+  private PlanRulerComponent horizontalRuler;
+  private PlanRulerComponent verticalRuler;
+
+  private final Cursor rotationCursor;
+  private final Cursor elevationCursor;
+  private final Cursor heightCursor;
+  private final Cursor powerCursor;
+  private final Cursor resizeCursor;
+  private final Cursor moveCursor;
+  private final Cursor panningCursor;
+  private final Cursor duplicationCursor;
+
+  private Rectangle2D rectangleFeedback;
   private Class<? extends Selectable> alignedObjectClass;
-  private Selectable            alignedObjectFeedback;
-  private Point2D               locationFeeback;
-  private boolean               showPointFeedback;
-  private Point2D               centerAngleFeedback;
-  private Point2D               point1AngleFeedback;
-  private Point2D               point2AngleFeedback;
-  private List<Selectable>      draggedItemsFeedback;
-  private List<DimensionLine>   dimensionLinesFeedback;
-  private boolean               selectionScrollUpdated;
-  private boolean               wallsDoorsOrWindowsModification;
-  private JToolTip              toolTip;
-  private JWindow               toolTipWindow;
-  private boolean               resizeIndicatorVisible;
-  
+  private Selectable alignedObjectFeedback;
+  private Point2D locationFeeback;
+  private boolean showPointFeedback;
+  private Point2D centerAngleFeedback;
+  private Point2D point1AngleFeedback;
+  private Point2D point2AngleFeedback;
+  private List<Selectable> draggedItemsFeedback;
+  private List<DimensionLine> dimensionLinesFeedback;
+  private boolean selectionScrollUpdated;
+  private boolean wallsDoorsOrWindowsModification;
+  private JToolTip toolTip;
+  private JWindow toolTipWindow;
+  private boolean resizeIndicatorVisible;
+
   private Map<PlanController.EditableProperty, JFormattedTextField> toolTipEditableTextFields;
-  private KeyListener                       toolTipKeyListener;
-  
-  private List<HomePieceOfFurniture>        sortedLevelFurniture;
-  private List<Room>                        sortedLevelRooms;
-  private Map<TextStyle, Font>              fonts;
-  private Map<TextStyle, FontMetrics>       fontsMetrics;
-  
-  private Rectangle2D                       planBoundsCache;  
-  private boolean                           planBoundsCacheValid = false;  
-  private BufferedImage                     backgroundImageCache;
-  private Map<TextureImage, BufferedImage>  patternImagesCache;
-  private List<Wall>                        otherLevelsWallsCache;
-  private Area                              otherLevelsWallAreaCache;
-  private List<Room>                        otherLevelsRoomsCache;
-  private Area                              otherLevelsRoomAreaCache;
-  private Color                             wallsPatternBackgroundCache;
-  private Color                             wallsPatternForegroundCache;
-  private Map<Collection<Wall>, Area>       wallAreasCache;
+  private KeyListener toolTipKeyListener;
+
+  private List<HomePieceOfFurniture> sortedLevelFurniture;
+  private List<Room> sortedLevelRooms;
+  private Map<TextStyle, Font> fonts;
+  private Map<TextStyle, FontMetrics> fontsMetrics;
+
+  private Rectangle2D planBoundsCache;
+  private boolean planBoundsCacheValid = false;
+  private BufferedImage backgroundImageCache;
+  private Map<TextureImage, BufferedImage> patternImagesCache;
+  private List<Wall> otherLevelsWallsCache;
+  private Area otherLevelsWallAreaCache;
+  private List<Room> otherLevelsRoomsCache;
+  private Area otherLevelsRoomAreaCache;
+  private Color wallsPatternBackgroundCache;
+  private Color wallsPatternForegroundCache;
+  private Map<Collection<Wall>, Area> wallAreasCache;
   private Map<RotatedTextureKey, BufferedImage> floorTextureImagesCache;
   private Map<HomePieceOfFurniture, PieceOfFurnitureTopViewIcon> furnitureTopViewIconsCache;
 
-  private static ExecutorService            backgroundImageLoader;
-  
-  private static final Shape       POINT_INDICATOR;
+  private static ExecutorService backgroundImageLoader;
+
+  private static final Shape POINT_INDICATOR;
   private static final GeneralPath FURNITURE_ROTATION_INDICATOR;
   private static final GeneralPath FURNITURE_RESIZE_INDICATOR;
   private static final GeneralPath ELEVATION_INDICATOR;
-  private static final Shape       ELEVATION_POINT_INDICATOR;
+  private static final Shape ELEVATION_POINT_INDICATOR;
   private static final GeneralPath FURNITURE_HEIGHT_INDICATOR;
-  private static final Shape       FURNITURE_HEIGHT_POINT_INDICATOR;
+  private static final Shape FURNITURE_HEIGHT_POINT_INDICATOR;
   private static final GeneralPath LIGHT_POWER_INDICATOR;
-  private static final Shape       LIGHT_POWER_POINT_INDICATOR;
+  private static final Shape LIGHT_POWER_POINT_INDICATOR;
   private static final GeneralPath WALL_ORIENTATION_INDICATOR;
-  private static final Shape       WALL_POINT;
+  private static final Shape WALL_POINT;
   private static final GeneralPath WALL_AND_LINE_RESIZE_INDICATOR;
-  private static final Shape       CAMERA_YAW_ROTATION_INDICATOR;
+  private static final Shape CAMERA_YAW_ROTATION_INDICATOR;
   private static final GeneralPath CAMERA_PITCH_ROTATION_INDICATOR;
   private static final GeneralPath CAMERA_ELEVATION_INDICATOR;
-  private static final Shape       CAMERA_BODY;
-  private static final Shape       CAMERA_HEAD;  
-  private static final GeneralPath DIMENSION_LINE_END;  
+  private static final Shape CAMERA_BODY;
+  private static final Shape CAMERA_HEAD;
+  private static final GeneralPath DIMENSION_LINE_END;
   private static final GeneralPath TEXT_LOCATION_INDICATOR;
   private static final GeneralPath TEXT_ANGLE_INDICATOR;
-  private static final Shape       LABEL_CENTER_INDICATOR;
-  private static final Shape       COMPASS_DISC;
+  private static final Shape LABEL_CENTER_INDICATOR;
+  private static final Shape COMPASS_DISC;
   private static final GeneralPath COMPASS;
   private static final GeneralPath COMPASS_ROTATION_INDICATOR;
   private static final GeneralPath COMPASS_RESIZE_INDICATOR;
-  
+
   private static final GeneralPath ARROW;
-  
-  private static final Stroke      INDICATOR_STROKE = new BasicStroke(1.5f);
-  private static final Stroke      POINT_STROKE = new BasicStroke(2f);  
-  
-  private static final float       WALL_STROKE_WIDTH = 1.5f;
-  private static final float       BORDER_STROKE_WIDTH = 1f;
-  
+
+  private static final Stroke INDICATOR_STROKE = new BasicStroke(1.5f);
+  private static final Stroke POINT_STROKE = new BasicStroke(2f);
+
+  private static final float WALL_STROKE_WIDTH = 1.5f;
+  private static final float BORDER_STROKE_WIDTH = 1f;
+
   private static final BufferedImage ERROR_TEXTURE_IMAGE;
   private static final BufferedImage WAIT_TEXTURE_IMAGE;
 
   static {
     POINT_INDICATOR = new Ellipse2D.Float(-1.5f, -1.5f, 3, 3);
-    
+
     // Create a path that draws an round arrow used as a rotation indicator 
     // at top left point of a piece of furniture
     FURNITURE_ROTATION_INDICATOR = new GeneralPath();
@@ -361,9 +365,9 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     FURNITURE_ROTATION_INDICATOR.moveTo(2.66f, -5.66f);
     FURNITURE_ROTATION_INDICATOR.lineTo(5.66f, -5.66f);
     FURNITURE_ROTATION_INDICATOR.lineTo(4f, -8.3f);
-    
+
     ELEVATION_POINT_INDICATOR = new Rectangle2D.Float(-1.5f, -1.5f, 3f, 3f);
-    
+
     // Create a path that draws a line with one arrow as an elevation indicator
     // at top right of a piece of furniture
     ELEVATION_INDICATOR = new GeneralPath();
@@ -374,9 +378,9 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     ELEVATION_INDICATOR.moveTo(-1.2f, 1.5f); // Bottom arrow
     ELEVATION_INDICATOR.lineTo(0, 4.5f);
     ELEVATION_INDICATOR.lineTo(1.2f, 1.5f);
-    
+
     FURNITURE_HEIGHT_POINT_INDICATOR = new Rectangle2D.Float(-1.5f, -1.5f, 3f, 3f);
-    
+
     // Create a path that draws a line with two arrows as a height indicator
     // at bottom left of a piece of furniture
     FURNITURE_HEIGHT_INDICATOR = new GeneralPath();
@@ -392,26 +396,26 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     FURNITURE_HEIGHT_INDICATOR.moveTo(-1.2f, 2.5f);  // Bottom arrow
     FURNITURE_HEIGHT_INDICATOR.lineTo(0f, 5.5f);
     FURNITURE_HEIGHT_INDICATOR.lineTo(1.2f, 2.5f);
-    
+
     LIGHT_POWER_POINT_INDICATOR = new Rectangle2D.Float(-1.5f, -1.5f, 3f, 3f);
-    
+
     // Create a path that draws a stripped triangle as a power indicator
     // at bottom left of a not deformable lights
     LIGHT_POWER_INDICATOR = new GeneralPath();
-    LIGHT_POWER_INDICATOR.moveTo(-8, 0); 
+    LIGHT_POWER_INDICATOR.moveTo(-8, 0);
     LIGHT_POWER_INDICATOR.lineTo(-6f, 0);
-    LIGHT_POWER_INDICATOR.lineTo(-6f, -1);    
-    LIGHT_POWER_INDICATOR.closePath();    
-    LIGHT_POWER_INDICATOR.moveTo(-3, 0); 
+    LIGHT_POWER_INDICATOR.lineTo(-6f, -1);
+    LIGHT_POWER_INDICATOR.closePath();
+    LIGHT_POWER_INDICATOR.moveTo(-3, 0);
     LIGHT_POWER_INDICATOR.lineTo(-1f, 0);
-    LIGHT_POWER_INDICATOR.lineTo(-1f, -2.5f);    
-    LIGHT_POWER_INDICATOR.lineTo(-3f, -1.8f);    
-    LIGHT_POWER_INDICATOR.closePath();    
-    LIGHT_POWER_INDICATOR.moveTo(2, 0); 
+    LIGHT_POWER_INDICATOR.lineTo(-1f, -2.5f);
+    LIGHT_POWER_INDICATOR.lineTo(-3f, -1.8f);
+    LIGHT_POWER_INDICATOR.closePath();
+    LIGHT_POWER_INDICATOR.moveTo(2, 0);
     LIGHT_POWER_INDICATOR.lineTo(4, 0);
-    LIGHT_POWER_INDICATOR.lineTo(4f, -3.5f);    
-    LIGHT_POWER_INDICATOR.lineTo(2f, -2.8f);    
-    LIGHT_POWER_INDICATOR.closePath();    
+    LIGHT_POWER_INDICATOR.lineTo(4f, -3.5f);
+    LIGHT_POWER_INDICATOR.lineTo(2f, -2.8f);
+    LIGHT_POWER_INDICATOR.closePath();
 
     // Create a path used as a resize indicator 
     // at bottom right point of a piece of furniture
@@ -427,7 +431,7 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     FURNITURE_RESIZE_INDICATOR.moveTo(7, 9.5f);
     FURNITURE_RESIZE_INDICATOR.lineTo(10, 10);
     FURNITURE_RESIZE_INDICATOR.lineTo(9.5f, 7);
-    
+
     // Create a path used an orientation indicator
     // at start and end points of a selected wall
     WALL_ORIENTATION_INDICATOR = new GeneralPath();
@@ -447,11 +451,11 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     WALL_AND_LINE_RESIZE_INDICATOR.moveTo(8.7f, -1.8f);
     WALL_AND_LINE_RESIZE_INDICATOR.lineTo(12, 0);
     WALL_AND_LINE_RESIZE_INDICATOR.lineTo(8.7f, 1.8f);
-    
+
     // Create a path used as yaw rotation indicator for the camera
     AffineTransform transform = AffineTransform.getRotateInstance(-Math.PI / 4);
     CAMERA_YAW_ROTATION_INDICATOR = FURNITURE_ROTATION_INDICATOR.createTransformedShape(transform);
-    
+
     // Create a path used as pitch rotation indicator for the camera
     CAMERA_PITCH_ROTATION_INDICATOR = new GeneralPath();
     CAMERA_PITCH_ROTATION_INDICATOR.append(POINT_INDICATOR, false);
@@ -463,7 +467,7 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     CAMERA_PITCH_ROTATION_INDICATOR.moveTo(10f, 4.5f);
     CAMERA_PITCH_ROTATION_INDICATOR.lineTo(12.3f, 2f);
     CAMERA_PITCH_ROTATION_INDICATOR.lineTo(12.8f, 5.8f);
-    
+
     // Create a path that draws a line with one arrow as an elevation indicator
     // at the back of the camera
     CAMERA_ELEVATION_INDICATOR = new GeneralPath();
@@ -482,7 +486,7 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     cameraBodyAreaPath.append(new Ellipse2D.Float(-0.5f, -0.3f, 0.24f, 0.6f), false); // Shoulder
     cameraBodyAreaPath.append(new Ellipse2D.Float(0.26f, -0.3f, 0.24f, 0.6f), false); // Shoulder
     CAMERA_BODY = new Area(cameraBodyAreaPath);
-    
+
     GeneralPath cameraHeadAreaPath = new GeneralPath();
     cameraHeadAreaPath.append(new Ellipse2D.Float(-0.18f, -0.45f, 0.36f, 1f), false); // Head
     cameraHeadAreaPath.moveTo(-0.04f, 0.55f); // Noise
@@ -490,13 +494,13 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     cameraHeadAreaPath.lineTo(0.04f, 0.55f);
     cameraHeadAreaPath.closePath();
     CAMERA_HEAD = new Area(cameraHeadAreaPath);
-    
+
     DIMENSION_LINE_END = new GeneralPath();
     DIMENSION_LINE_END.moveTo(-5, 5);
     DIMENSION_LINE_END.lineTo(5, -5);
     DIMENSION_LINE_END.moveTo(0, 5);
     DIMENSION_LINE_END.lineTo(0, -5);
-    
+
     // Create a path that draws three arrows going left, right and down
     TEXT_LOCATION_INDICATOR = new GeneralPath();
     TEXT_LOCATION_INDICATOR.append(new Arc2D.Float(-2, 0, 4, 4, 190, 160, Arc2D.CHORD), false);
@@ -515,17 +519,17 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     TEXT_LOCATION_INDICATOR.moveTo(-6, 6.5f);    // Left arrow
     TEXT_LOCATION_INDICATOR.lineTo(-10, 7);
     TEXT_LOCATION_INDICATOR.lineTo(-7.5f, 3.5f);
-    
+
     // Create a path used as angle indicator for texts
-    TEXT_ANGLE_INDICATOR = new GeneralPath(); 
-    TEXT_ANGLE_INDICATOR.append(new Arc2D.Float(-1.25f, -1.25f, 2.5f, 2.5f, 10, 160, Arc2D.CHORD), false);    
+    TEXT_ANGLE_INDICATOR = new GeneralPath();
+    TEXT_ANGLE_INDICATOR.append(new Arc2D.Float(-1.25f, -1.25f, 2.5f, 2.5f, 10, 160, Arc2D.CHORD), false);
     TEXT_ANGLE_INDICATOR.append(new Arc2D.Float(-8, -8, 16, 16, 30, 120, Arc2D.OPEN), false);
     TEXT_ANGLE_INDICATOR.moveTo(4f, -5.2f);
     TEXT_ANGLE_INDICATOR.lineTo(6.9f, -4f);
     TEXT_ANGLE_INDICATOR.lineTo(5.8f, -7f);
-    
+
     LABEL_CENTER_INDICATOR = new Ellipse2D.Float(-1f, -1f, 2, 2);
-    
+
     // Create the path used to draw the compass
     COMPASS_DISC = new Ellipse2D.Float(-0.5f, -0.5f, 1, 1);
     BasicStroke stroke = new BasicStroke(0.01f);
@@ -557,7 +561,7 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     COMPASS_ROTATION_INDICATOR.moveTo(4f, 5.66f);
     COMPASS_ROTATION_INDICATOR.lineTo(7f, 5.66f);
     COMPASS_ROTATION_INDICATOR.lineTo(5.6f, 8.3f);
-    
+
     // Create a path used as a resize indicator for the compass 
     COMPASS_RESIZE_INDICATOR = new GeneralPath();
     COMPASS_RESIZE_INDICATOR.append(new Rectangle2D.Float(-1.5f, -1.5f, 3f, 3f), false);
@@ -570,7 +574,7 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     COMPASS_RESIZE_INDICATOR.moveTo(9, -1.5f);
     COMPASS_RESIZE_INDICATOR.lineTo(12, 0);
     COMPASS_RESIZE_INDICATOR.lineTo(9, 1.5f);
-    
+
     ARROW = new GeneralPath();
     ARROW.moveTo(-5, -2);
     ARROW.lineTo(0, 0);
@@ -592,7 +596,7 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
   /**
    * Creates a new plan that displays <code>home</code>.
    */
-  public PlanComponent(Home home, 
+  public PlanComponent(Home home,
                        UserPreferences preferences,
                        PlanController controller) {
     this.home = home;
@@ -606,25 +610,25 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
       addMouseListeners(controller);
       addFocusListener(controller);
       addControllerListener(controller);
-      createActions(controller);      
+      createActions(controller);
       installDefaultKeyboardActions();
       setFocusable(true);
       setAutoscrolls(true);
     }
     this.rotationCursor = createCustomCursor("resources/cursors/rotation16x16.png",
-        "resources/cursors/rotation32x32.png", "Rotation cursor", Cursor.MOVE_CURSOR);
+            "resources/cursors/rotation32x32.png", "Rotation cursor", Cursor.MOVE_CURSOR);
     this.elevationCursor = createCustomCursor("resources/cursors/elevation16x16.png",
-        "resources/cursors/elevation32x32.png", "Elevation cursor", Cursor.MOVE_CURSOR);
+            "resources/cursors/elevation32x32.png", "Elevation cursor", Cursor.MOVE_CURSOR);
     this.heightCursor = createCustomCursor("resources/cursors/height16x16.png",
-        "resources/cursors/height32x32.png", "Height cursor", Cursor.MOVE_CURSOR);
+            "resources/cursors/height32x32.png", "Height cursor", Cursor.MOVE_CURSOR);
     this.powerCursor = createCustomCursor("resources/cursors/power16x16.png",
-        "resources/cursors/power32x32.png", "Power cursor", Cursor.MOVE_CURSOR);
+            "resources/cursors/power32x32.png", "Power cursor", Cursor.MOVE_CURSOR);
     this.resizeCursor = createCustomCursor("resources/cursors/resize16x16.png",
-        "resources/cursors/resize32x32.png", "Resize cursor", Cursor.MOVE_CURSOR);
+            "resources/cursors/resize32x32.png", "Resize cursor", Cursor.MOVE_CURSOR);
     this.moveCursor = createCustomCursor("resources/cursors/move16x16.png",
-        "resources/cursors/move32x32.png", "Move cursor", Cursor.MOVE_CURSOR);
+            "resources/cursors/move32x32.png", "Move cursor", Cursor.MOVE_CURSOR);
     this.panningCursor = createCustomCursor("resources/cursors/panning16x16.png",
-        "resources/cursors/panning32x32.png", "Panning cursor", Cursor.HAND_CURSOR);
+            "resources/cursors/panning32x32.png", "Panning cursor", Cursor.HAND_CURSOR);
     this.duplicationCursor = DragSource.DefaultCopyDrop;
     this.patternImagesCache = new HashMap<TextureImage, BufferedImage>();
     // Install default colors using same colors as a text field
@@ -633,375 +637,375 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
   }
 
   /**
-   * Adds home items and selection listeners on this component to receive  
-   * changes notifications from home. 
+   * Adds home items and selection listeners on this component to receive
+   * changes notifications from home.
    */
-  private void addModelListeners(final Home home, final UserPreferences preferences, 
+  private void addModelListeners(final Home home, final UserPreferences preferences,
                                  final PlanController controller) {
     // Add listener to update plan when furniture changes
     final PropertyChangeListener furnitureChangeListener = new PropertyChangeListener() {
-        public void propertyChange(PropertyChangeEvent ev) {
-          if (furnitureTopViewIconsCache != null
-              && (HomePieceOfFurniture.Property.COLOR.name().equals(ev.getPropertyName())
-                  || HomePieceOfFurniture.Property.TEXTURE.name().equals(ev.getPropertyName())
-                  || HomePieceOfFurniture.Property.MODEL_MATERIALS.name().equals(ev.getPropertyName())
-                  || HomePieceOfFurniture.Property.SHININESS.name().equals(ev.getPropertyName())
-                  || (HomePieceOfFurniture.Property.WIDTH.name().equals(ev.getPropertyName())
-                      || HomePieceOfFurniture.Property.DEPTH.name().equals(ev.getPropertyName())
-                      || HomePieceOfFurniture.Property.HEIGHT.name().equals(ev.getPropertyName()))
-                     && ((HomePieceOfFurniture)ev.getSource()).getTexture() != null)) {
-            for (HomePieceOfFurniture piece : getFurnitureWithoutGroups((HomePieceOfFurniture)ev.getSource())) {
-              furnitureTopViewIconsCache.remove(piece);
-            }
-            repaint();
-          } else if (HomePieceOfFurniture.Property.ELEVATION.name().equals(ev.getPropertyName())
-                     || HomePieceOfFurniture.Property.LEVEL.name().equals(ev.getPropertyName())
-                     || HomePieceOfFurniture.Property.HEIGHT.name().equals(ev.getPropertyName())) {
-            sortedLevelFurniture = null;
-            repaint();
-          } else {
-            revalidate();
+      public void propertyChange(PropertyChangeEvent ev) {
+        if (furnitureTopViewIconsCache != null
+                && (HomePieceOfFurniture.Property.COLOR.name().equals(ev.getPropertyName())
+                || HomePieceOfFurniture.Property.TEXTURE.name().equals(ev.getPropertyName())
+                || HomePieceOfFurniture.Property.MODEL_MATERIALS.name().equals(ev.getPropertyName())
+                || HomePieceOfFurniture.Property.SHININESS.name().equals(ev.getPropertyName())
+                || (HomePieceOfFurniture.Property.WIDTH.name().equals(ev.getPropertyName())
+                || HomePieceOfFurniture.Property.DEPTH.name().equals(ev.getPropertyName())
+                || HomePieceOfFurniture.Property.HEIGHT.name().equals(ev.getPropertyName()))
+                && ((HomePieceOfFurniture) ev.getSource()).getTexture() != null)) {
+          for (HomePieceOfFurniture piece : getFurnitureWithoutGroups((HomePieceOfFurniture) ev.getSource())) {
+            furnitureTopViewIconsCache.remove(piece);
           }
+          repaint();
+        } else if (HomePieceOfFurniture.Property.ELEVATION.name().equals(ev.getPropertyName())
+                || HomePieceOfFurniture.Property.LEVEL.name().equals(ev.getPropertyName())
+                || HomePieceOfFurniture.Property.HEIGHT.name().equals(ev.getPropertyName())) {
+          sortedLevelFurniture = null;
+          repaint();
+        } else {
+          revalidate();
         }
-      };
+      }
+    };
     for (HomePieceOfFurniture piece : home.getFurniture()) {
       piece.addPropertyChangeListener(furnitureChangeListener);
       if (piece instanceof HomeFurnitureGroup) {
-        for (HomePieceOfFurniture childPiece : ((HomeFurnitureGroup)piece).getAllFurniture()) {
+        for (HomePieceOfFurniture childPiece : ((HomeFurnitureGroup) piece).getAllFurniture()) {
           childPiece.addPropertyChangeListener(furnitureChangeListener);
         }
       }
     }
     home.addFurnitureListener(new CollectionListener<HomePieceOfFurniture>() {
-        public void collectionChanged(CollectionEvent<HomePieceOfFurniture> ev) {
-          HomePieceOfFurniture piece = ev.getItem();
-          if (ev.getType() == CollectionEvent.Type.ADD) {
-            piece.addPropertyChangeListener(furnitureChangeListener);
-            if (piece instanceof HomeFurnitureGroup) {
-              for (HomePieceOfFurniture childPiece : ((HomeFurnitureGroup)piece).getAllFurniture()) {
-                childPiece.addPropertyChangeListener(furnitureChangeListener);
-              }
-            }
-          } else if (ev.getType() == CollectionEvent.Type.DELETE) {
-            piece.removePropertyChangeListener(furnitureChangeListener);
-            if (piece instanceof HomeFurnitureGroup) {
-              for (HomePieceOfFurniture childPiece : ((HomeFurnitureGroup)piece).getAllFurniture()) {
-                childPiece.removePropertyChangeListener(furnitureChangeListener);
-              }
+      public void collectionChanged(CollectionEvent<HomePieceOfFurniture> ev) {
+        HomePieceOfFurniture piece = ev.getItem();
+        if (ev.getType() == CollectionEvent.Type.ADD) {
+          piece.addPropertyChangeListener(furnitureChangeListener);
+          if (piece instanceof HomeFurnitureGroup) {
+            for (HomePieceOfFurniture childPiece : ((HomeFurnitureGroup) piece).getAllFurniture()) {
+              childPiece.addPropertyChangeListener(furnitureChangeListener);
             }
           }
-          sortedLevelFurniture = null;
-          revalidate();
+        } else if (ev.getType() == CollectionEvent.Type.DELETE) {
+          piece.removePropertyChangeListener(furnitureChangeListener);
+          if (piece instanceof HomeFurnitureGroup) {
+            for (HomePieceOfFurniture childPiece : ((HomeFurnitureGroup) piece).getAllFurniture()) {
+              childPiece.removePropertyChangeListener(furnitureChangeListener);
+            }
+          }
         }
-      });
-    
+        sortedLevelFurniture = null;
+        revalidate();
+      }
+    });
+
     // Add listener to update plan when walls change
     final PropertyChangeListener wallChangeListener = new PropertyChangeListener() {
-        public void propertyChange(PropertyChangeEvent ev) {
-          String propertyName = ev.getPropertyName();
-          if (Wall.Property.X_START.name().equals(propertyName)
-              || Wall.Property.X_END.name().equals(propertyName) 
-              || Wall.Property.Y_START.name().equals(propertyName) 
-              || Wall.Property.Y_END.name().equals(propertyName)
-              || Wall.Property.WALL_AT_START.name().equals(propertyName)
-              || Wall.Property.WALL_AT_END.name().equals(propertyName)
-              || Wall.Property.THICKNESS.name().equals(propertyName)
-              || Wall.Property.ARC_EXTENT.name().equals(propertyName)
-              || Wall.Property.PATTERN.name().equals(propertyName)) {
-            if (home.isAllLevelsSelection()) {
-              otherLevelsWallAreaCache = null;
-              otherLevelsWallsCache = null;
-            }
-            wallAreasCache = null;
-            revalidate();
-          } else if (Wall.Property.LEVEL.name().equals(propertyName)
-              || Wall.Property.HEIGHT.name().equals(propertyName)
-              || Wall.Property.HEIGHT_AT_END.name().equals(propertyName)) {
+      public void propertyChange(PropertyChangeEvent ev) {
+        String propertyName = ev.getPropertyName();
+        if (Wall.Property.X_START.name().equals(propertyName)
+                || Wall.Property.X_END.name().equals(propertyName)
+                || Wall.Property.Y_START.name().equals(propertyName)
+                || Wall.Property.Y_END.name().equals(propertyName)
+                || Wall.Property.WALL_AT_START.name().equals(propertyName)
+                || Wall.Property.WALL_AT_END.name().equals(propertyName)
+                || Wall.Property.THICKNESS.name().equals(propertyName)
+                || Wall.Property.ARC_EXTENT.name().equals(propertyName)
+                || Wall.Property.PATTERN.name().equals(propertyName)) {
+          if (home.isAllLevelsSelection()) {
             otherLevelsWallAreaCache = null;
             otherLevelsWallsCache = null;
-            wallAreasCache = null;
-            repaint();
           }
+          wallAreasCache = null;
+          revalidate();
+        } else if (Wall.Property.LEVEL.name().equals(propertyName)
+                || Wall.Property.HEIGHT.name().equals(propertyName)
+                || Wall.Property.HEIGHT_AT_END.name().equals(propertyName)) {
+          otherLevelsWallAreaCache = null;
+          otherLevelsWallsCache = null;
+          wallAreasCache = null;
+          repaint();
         }
-      };
+      }
+    };
     for (Wall wall : home.getWalls()) {
       wall.addPropertyChangeListener(wallChangeListener);
     }
-    home.addWallsListener(new CollectionListener<Wall> () {
-        public void collectionChanged(CollectionEvent<Wall> ev) {
-          if (ev.getType() == CollectionEvent.Type.ADD) {
-            ev.getItem().addPropertyChangeListener(wallChangeListener);
-          } else if (ev.getType() == CollectionEvent.Type.DELETE) {
-            ev.getItem().removePropertyChangeListener(wallChangeListener);
-          }
-          otherLevelsWallAreaCache = null;
-          otherLevelsWallsCache = null;
-          wallAreasCache = null;
-          revalidate();
+    home.addWallsListener(new CollectionListener<Wall>() {
+      public void collectionChanged(CollectionEvent<Wall> ev) {
+        if (ev.getType() == CollectionEvent.Type.ADD) {
+          ev.getItem().addPropertyChangeListener(wallChangeListener);
+        } else if (ev.getType() == CollectionEvent.Type.DELETE) {
+          ev.getItem().removePropertyChangeListener(wallChangeListener);
         }
-      });
-    
+        otherLevelsWallAreaCache = null;
+        otherLevelsWallsCache = null;
+        wallAreasCache = null;
+        revalidate();
+      }
+    });
+
     // Add listener to update plan when rooms change
     final PropertyChangeListener roomChangeListener = new PropertyChangeListener() {
-        public void propertyChange(PropertyChangeEvent ev) {
-          String propertyName = ev.getPropertyName();
-          if (Room.Property.POINTS.name().equals(propertyName)
-              || Room.Property.NAME.name().equals(propertyName)
-              || Room.Property.NAME_X_OFFSET.name().equals(propertyName)
-              || Room.Property.NAME_Y_OFFSET.name().equals(propertyName)
-              || Room.Property.NAME_STYLE.name().equals(propertyName)
-              || Room.Property.NAME_ANGLE.name().equals(propertyName)
-              || Room.Property.AREA_VISIBLE.name().equals(propertyName)
-              || Room.Property.AREA_X_OFFSET.name().equals(propertyName)
-              || Room.Property.AREA_Y_OFFSET.name().equals(propertyName)
-              || Room.Property.AREA_STYLE.name().equals(propertyName)
-              || Room.Property.AREA_ANGLE.name().equals(propertyName)) {
-            sortedLevelRooms = null;
-            otherLevelsRoomsCache = null;
-            otherLevelsRoomAreaCache = null;
-            revalidate();
-          } else if (preferences.isRoomFloorColoredOrTextured()
-                     && (Room.Property.FLOOR_COLOR.name().equals(propertyName)
-                         || Room.Property.FLOOR_TEXTURE.name().equals(propertyName)
-                         || Room.Property.FLOOR_VISIBLE.name().equals(propertyName))) {
-            repaint(); 
-          }
+      public void propertyChange(PropertyChangeEvent ev) {
+        String propertyName = ev.getPropertyName();
+        if (Room.Property.POINTS.name().equals(propertyName)
+                || Room.Property.NAME.name().equals(propertyName)
+                || Room.Property.NAME_X_OFFSET.name().equals(propertyName)
+                || Room.Property.NAME_Y_OFFSET.name().equals(propertyName)
+                || Room.Property.NAME_STYLE.name().equals(propertyName)
+                || Room.Property.NAME_ANGLE.name().equals(propertyName)
+                || Room.Property.AREA_VISIBLE.name().equals(propertyName)
+                || Room.Property.AREA_X_OFFSET.name().equals(propertyName)
+                || Room.Property.AREA_Y_OFFSET.name().equals(propertyName)
+                || Room.Property.AREA_STYLE.name().equals(propertyName)
+                || Room.Property.AREA_ANGLE.name().equals(propertyName)) {
+          sortedLevelRooms = null;
+          otherLevelsRoomsCache = null;
+          otherLevelsRoomAreaCache = null;
+          revalidate();
+        } else if (preferences.isRoomFloorColoredOrTextured()
+                && (Room.Property.FLOOR_COLOR.name().equals(propertyName)
+                || Room.Property.FLOOR_TEXTURE.name().equals(propertyName)
+                || Room.Property.FLOOR_VISIBLE.name().equals(propertyName))) {
+          repaint();
         }
-      };
+      }
+    };
     for (Room room : home.getRooms()) {
       room.addPropertyChangeListener(roomChangeListener);
     }
-    home.addRoomsListener(new CollectionListener<Room> () {
-        public void collectionChanged(CollectionEvent<Room> ev) {
-          if (ev.getType() == CollectionEvent.Type.ADD) {
-            ev.getItem().addPropertyChangeListener(roomChangeListener);
-          } else if (ev.getType() == CollectionEvent.Type.DELETE) {
-            ev.getItem().removePropertyChangeListener(roomChangeListener);
-          }
-          sortedLevelRooms = null;
-          otherLevelsRoomsCache = null;
-          otherLevelsRoomAreaCache = null;
-          revalidate();
+    home.addRoomsListener(new CollectionListener<Room>() {
+      public void collectionChanged(CollectionEvent<Room> ev) {
+        if (ev.getType() == CollectionEvent.Type.ADD) {
+          ev.getItem().addPropertyChangeListener(roomChangeListener);
+        } else if (ev.getType() == CollectionEvent.Type.DELETE) {
+          ev.getItem().removePropertyChangeListener(roomChangeListener);
         }
-      });
+        sortedLevelRooms = null;
+        otherLevelsRoomsCache = null;
+        otherLevelsRoomAreaCache = null;
+        revalidate();
+      }
+    });
 
-     // Add listener to update plan when polylines change
-     final PropertyChangeListener changeListener = new PropertyChangeListener() {
-         public void propertyChange(PropertyChangeEvent ev) {
-           String propertyName = ev.getPropertyName();
-           if (Polyline.Property.COLOR.name().equals(propertyName)
-               || Polyline.Property.DASH_STYLE.name().equals(propertyName)) {
-             repaint();
-           } else {
-             revalidate();
-           }
-         }
-       };
-     for (Polyline polyline : home.getPolylines()) {
-       polyline.addPropertyChangeListener(changeListener);
-     }
-     home.addPolylinesListener(new CollectionListener<Polyline>() {
-        public void collectionChanged(CollectionEvent<Polyline> ev) {
-          if (ev.getType() == CollectionEvent.Type.ADD) {
-            ev.getItem().addPropertyChangeListener(changeListener);
-          } else if (ev.getType() == CollectionEvent.Type.DELETE) {
-            ev.getItem().removePropertyChangeListener(changeListener);
-          }
+    // Add listener to update plan when polylines change
+    final PropertyChangeListener changeListener = new PropertyChangeListener() {
+      public void propertyChange(PropertyChangeEvent ev) {
+        String propertyName = ev.getPropertyName();
+        if (Polyline.Property.COLOR.name().equals(propertyName)
+                || Polyline.Property.DASH_STYLE.name().equals(propertyName)) {
+          repaint();
+        } else {
           revalidate();
         }
-      });
+      }
+    };
+    for (Polyline polyline : home.getPolylines()) {
+      polyline.addPropertyChangeListener(changeListener);
+    }
+    home.addPolylinesListener(new CollectionListener<Polyline>() {
+      public void collectionChanged(CollectionEvent<Polyline> ev) {
+        if (ev.getType() == CollectionEvent.Type.ADD) {
+          ev.getItem().addPropertyChangeListener(changeListener);
+        } else if (ev.getType() == CollectionEvent.Type.DELETE) {
+          ev.getItem().removePropertyChangeListener(changeListener);
+        }
+        revalidate();
+      }
+    });
 
     // Add listener to update plan when dimension lines change
     final PropertyChangeListener dimensionLineChangeListener = new PropertyChangeListener() {
-        public void propertyChange(PropertyChangeEvent ev) {
-          revalidate();
-        }
-      };
+      public void propertyChange(PropertyChangeEvent ev) {
+        revalidate();
+      }
+    };
     for (DimensionLine dimensionLine : home.getDimensionLines()) {
       dimensionLine.addPropertyChangeListener(dimensionLineChangeListener);
     }
-    home.addDimensionLinesListener(new CollectionListener<DimensionLine> () {
-        public void collectionChanged(CollectionEvent<DimensionLine> ev) {
-          if (ev.getType() == CollectionEvent.Type.ADD) {
-            ev.getItem().addPropertyChangeListener(dimensionLineChangeListener);
-          } else if (ev.getType() == CollectionEvent.Type.DELETE) {
-            ev.getItem().removePropertyChangeListener(dimensionLineChangeListener);
-          }
-          revalidate();
+    home.addDimensionLinesListener(new CollectionListener<DimensionLine>() {
+      public void collectionChanged(CollectionEvent<DimensionLine> ev) {
+        if (ev.getType() == CollectionEvent.Type.ADD) {
+          ev.getItem().addPropertyChangeListener(dimensionLineChangeListener);
+        } else if (ev.getType() == CollectionEvent.Type.DELETE) {
+          ev.getItem().removePropertyChangeListener(dimensionLineChangeListener);
         }
-      });
+        revalidate();
+      }
+    });
 
     // Add listener to update plan when labels change
     final PropertyChangeListener labelChangeListener = new PropertyChangeListener() {
-        public void propertyChange(PropertyChangeEvent ev) {
-          revalidate();
-        }
-      };
+      public void propertyChange(PropertyChangeEvent ev) {
+        revalidate();
+      }
+    };
     for (Label label : home.getLabels()) {
       label.addPropertyChangeListener(labelChangeListener);
     }
-    home.addLabelsListener(new CollectionListener<Label> () {
-        public void collectionChanged(CollectionEvent<Label> ev) {
-          if (ev.getType() == CollectionEvent.Type.ADD) {
-            ev.getItem().addPropertyChangeListener(labelChangeListener);
-          } else if (ev.getType() == CollectionEvent.Type.DELETE) {
-            ev.getItem().removePropertyChangeListener(labelChangeListener);
-          }
-          revalidate();
+    home.addLabelsListener(new CollectionListener<Label>() {
+      public void collectionChanged(CollectionEvent<Label> ev) {
+        if (ev.getType() == CollectionEvent.Type.ADD) {
+          ev.getItem().addPropertyChangeListener(labelChangeListener);
+        } else if (ev.getType() == CollectionEvent.Type.DELETE) {
+          ev.getItem().removePropertyChangeListener(labelChangeListener);
         }
-      });
+        revalidate();
+      }
+    });
 
     // Add listener to update plan when levels change
     final PropertyChangeListener levelChangeListener = new PropertyChangeListener() {
-        public void propertyChange(PropertyChangeEvent ev) {
-          String propertyName = ev.getPropertyName();
-          if (Level.Property.BACKGROUND_IMAGE.name().equals(propertyName)) {
-            backgroundImageCache = null;
-            revalidate();
-          } else if (Level.Property.ELEVATION.name().equals(propertyName)
-                     || Level.Property.ELEVATION_INDEX.name().equals(propertyName)
-                     || Level.Property.VIEWABLE.name().equals(propertyName)) {
-            backgroundImageCache = null;
-            otherLevelsWallAreaCache = null;
-            otherLevelsWallsCache = null;
-            otherLevelsRoomsCache = null;
-            otherLevelsRoomAreaCache = null;
-            wallAreasCache = null;
-            sortedLevelFurniture = null;
-            sortedLevelRooms = null;
-            repaint();
-          }
-        }
-      };
-    for (Level level : home.getLevels()) {
-      level.addPropertyChangeListener(levelChangeListener);
-    }
-    home.addLevelsListener(new CollectionListener<Level> () {
-        public void collectionChanged(CollectionEvent<Level> ev) {
-          Level level = ev.getItem();
-          if (ev.getType() == CollectionEvent.Type.ADD) {
-            level.addPropertyChangeListener(levelChangeListener);
-          } else if (ev.getType() == CollectionEvent.Type.DELETE) {
-            level.removePropertyChangeListener(levelChangeListener);
-          }
-          revalidate();
-        }
-      });
-
-    home.addPropertyChangeListener(Home.Property.CAMERA, new PropertyChangeListener() {
-        public void propertyChange(PropertyChangeEvent ev) {
-          revalidate();
-        }
-      });
-    home.getObserverCamera().addPropertyChangeListener(new PropertyChangeListener() {
-        public void propertyChange(PropertyChangeEvent ev) {
-          String propertyName = ev.getPropertyName();
-          if (Camera.Property.X.name().equals(propertyName)
-              || Camera.Property.Y.name().equals(propertyName) 
-              || Camera.Property.FIELD_OF_VIEW.name().equals(propertyName)
-              || Camera.Property.YAW.name().equals(propertyName)
-              || ObserverCamera.Property.WIDTH.name().equals(propertyName)
-              || ObserverCamera.Property.DEPTH.name().equals(propertyName) 
-              || ObserverCamera.Property.HEIGHT.name().equals(propertyName)) {
-            revalidate();
-          }
-        }
-      });
-    home.getCompass().addPropertyChangeListener(new PropertyChangeListener() {
-        public void propertyChange(PropertyChangeEvent ev) {
-          String propertyName = ev.getPropertyName();
-          if (Compass.Property.X.name().equals(propertyName)
-              || Compass.Property.Y.name().equals(propertyName) 
-              || Compass.Property.NORTH_DIRECTION.name().equals(propertyName)
-              || Compass.Property.DIAMETER.name().equals(propertyName)
-              || Compass.Property.VISIBLE.name().equals(propertyName)) {
-            revalidate();
-          }
-        }
-      });
-    home.addSelectionListener(new SelectionListener () {
-        public void selectionChanged(SelectionEvent ev) {
-          repaint();
-        }
-      });
-    home.addPropertyChangeListener(Home.Property.BACKGROUND_IMAGE, 
-      new PropertyChangeListener() {
-        public void propertyChange(PropertyChangeEvent ev) {
+      public void propertyChange(PropertyChangeEvent ev) {
+        String propertyName = ev.getPropertyName();
+        if (Level.Property.BACKGROUND_IMAGE.name().equals(propertyName)) {
           backgroundImageCache = null;
-          repaint();
-        }
-      });
-    home.addPropertyChangeListener(Home.Property.SELECTED_LEVEL, new PropertyChangeListener() {
-        public void propertyChange(PropertyChangeEvent ev) {
+          revalidate();
+        } else if (Level.Property.ELEVATION.name().equals(propertyName)
+                || Level.Property.ELEVATION_INDEX.name().equals(propertyName)
+                || Level.Property.VIEWABLE.name().equals(propertyName)) {
           backgroundImageCache = null;
           otherLevelsWallAreaCache = null;
           otherLevelsWallsCache = null;
           otherLevelsRoomsCache = null;
           otherLevelsRoomAreaCache = null;
           wallAreasCache = null;
-          sortedLevelRooms = null;
           sortedLevelFurniture = null;
+          sortedLevelRooms = null;
           repaint();
         }
-      });
-    preferences.addPropertyChangeListener(UserPreferences.Property.UNIT, 
-        new UserPreferencesChangeListener(this));
-    preferences.addPropertyChangeListener(UserPreferences.Property.LANGUAGE, 
-        new UserPreferencesChangeListener(this));
-    preferences.addPropertyChangeListener(UserPreferences.Property.GRID_VISIBLE, 
-        new UserPreferencesChangeListener(this));
-    preferences.addPropertyChangeListener(UserPreferences.Property.DEFAULT_FONT_NAME, 
-        new UserPreferencesChangeListener(this));
-    preferences.addPropertyChangeListener(UserPreferences.Property.FURNITURE_VIEWED_FROM_TOP, 
-        new UserPreferencesChangeListener(this));
-    preferences.addPropertyChangeListener(UserPreferences.Property.ROOM_FLOOR_COLORED_OR_TEXTURED, 
-        new UserPreferencesChangeListener(this));
-    preferences.addPropertyChangeListener(UserPreferences.Property.WALL_PATTERN, 
-        new UserPreferencesChangeListener(this));
+      }
+    };
+    for (Level level : home.getLevels()) {
+      level.addPropertyChangeListener(levelChangeListener);
+    }
+    home.addLevelsListener(new CollectionListener<Level>() {
+      public void collectionChanged(CollectionEvent<Level> ev) {
+        Level level = ev.getItem();
+        if (ev.getType() == CollectionEvent.Type.ADD) {
+          level.addPropertyChangeListener(levelChangeListener);
+        } else if (ev.getType() == CollectionEvent.Type.DELETE) {
+          level.removePropertyChangeListener(levelChangeListener);
+        }
+        revalidate();
+      }
+    });
+
+    home.addPropertyChangeListener(Home.Property.CAMERA, new PropertyChangeListener() {
+      public void propertyChange(PropertyChangeEvent ev) {
+        revalidate();
+      }
+    });
+    home.getObserverCamera().addPropertyChangeListener(new PropertyChangeListener() {
+      public void propertyChange(PropertyChangeEvent ev) {
+        String propertyName = ev.getPropertyName();
+        if (Camera.Property.X.name().equals(propertyName)
+                || Camera.Property.Y.name().equals(propertyName)
+                || Camera.Property.FIELD_OF_VIEW.name().equals(propertyName)
+                || Camera.Property.YAW.name().equals(propertyName)
+                || ObserverCamera.Property.WIDTH.name().equals(propertyName)
+                || ObserverCamera.Property.DEPTH.name().equals(propertyName)
+                || ObserverCamera.Property.HEIGHT.name().equals(propertyName)) {
+          revalidate();
+        }
+      }
+    });
+    home.getCompass().addPropertyChangeListener(new PropertyChangeListener() {
+      public void propertyChange(PropertyChangeEvent ev) {
+        String propertyName = ev.getPropertyName();
+        if (Compass.Property.X.name().equals(propertyName)
+                || Compass.Property.Y.name().equals(propertyName)
+                || Compass.Property.NORTH_DIRECTION.name().equals(propertyName)
+                || Compass.Property.DIAMETER.name().equals(propertyName)
+                || Compass.Property.VISIBLE.name().equals(propertyName)) {
+          revalidate();
+        }
+      }
+    });
+    home.addSelectionListener(new SelectionListener() {
+      public void selectionChanged(SelectionEvent ev) {
+        repaint();
+      }
+    });
+    home.addPropertyChangeListener(Home.Property.BACKGROUND_IMAGE,
+            new PropertyChangeListener() {
+              public void propertyChange(PropertyChangeEvent ev) {
+                backgroundImageCache = null;
+                repaint();
+              }
+            });
+    home.addPropertyChangeListener(Home.Property.SELECTED_LEVEL, new PropertyChangeListener() {
+      public void propertyChange(PropertyChangeEvent ev) {
+        backgroundImageCache = null;
+        otherLevelsWallAreaCache = null;
+        otherLevelsWallsCache = null;
+        otherLevelsRoomsCache = null;
+        otherLevelsRoomAreaCache = null;
+        wallAreasCache = null;
+        sortedLevelRooms = null;
+        sortedLevelFurniture = null;
+        repaint();
+      }
+    });
+    preferences.addPropertyChangeListener(UserPreferences.Property.UNIT,
+            new UserPreferencesChangeListener(this));
+    preferences.addPropertyChangeListener(UserPreferences.Property.LANGUAGE,
+            new UserPreferencesChangeListener(this));
+    preferences.addPropertyChangeListener(UserPreferences.Property.GRID_VISIBLE,
+            new UserPreferencesChangeListener(this));
+    preferences.addPropertyChangeListener(UserPreferences.Property.DEFAULT_FONT_NAME,
+            new UserPreferencesChangeListener(this));
+    preferences.addPropertyChangeListener(UserPreferences.Property.FURNITURE_VIEWED_FROM_TOP,
+            new UserPreferencesChangeListener(this));
+    preferences.addPropertyChangeListener(UserPreferences.Property.ROOM_FLOOR_COLORED_OR_TEXTURED,
+            new UserPreferencesChangeListener(this));
+    preferences.addPropertyChangeListener(UserPreferences.Property.WALL_PATTERN,
+            new UserPreferencesChangeListener(this));
   }
 
   /**
-   * Returns all the pieces depending on the given <code>piece</code> that are not groups.  
+   * Returns all the pieces depending on the given <code>piece</code> that are not groups.
    */
   private List<HomePieceOfFurniture> getFurnitureWithoutGroups(HomePieceOfFurniture piece) {
     if (piece instanceof HomeFurnitureGroup) {
       List<HomePieceOfFurniture> pieces = new ArrayList<HomePieceOfFurniture>();
-      for (HomePieceOfFurniture groupPiece : ((HomeFurnitureGroup)piece).getFurniture()) {
+      for (HomePieceOfFurniture groupPiece : ((HomeFurnitureGroup) piece).getFurniture()) {
         pieces.addAll(getFurnitureWithoutGroups(groupPiece));
       }
       return pieces;
     } else {
-      return Arrays.asList(new HomePieceOfFurniture [] {piece});
+      return Arrays.asList(new HomePieceOfFurniture[]{piece});
     }
   }
 
   /**
    * Preferences property listener bound to this component with a weak reference to avoid
-   * strong link between preferences and this component.  
+   * strong link between preferences and this component.
    */
   private static class UserPreferencesChangeListener implements PropertyChangeListener {
-    private WeakReference<PlanComponent>  planComponent;
+    private WeakReference<PlanComponent> planComponent;
 
     public UserPreferencesChangeListener(PlanComponent planComponent) {
       this.planComponent = new WeakReference<PlanComponent>(planComponent);
     }
-    
+
     public void propertyChange(PropertyChangeEvent ev) {
       // If plan component was garbage collected, remove this listener from preferences
       PlanComponent planComponent = this.planComponent.get();
-      UserPreferences preferences = (UserPreferences)ev.getSource();
+      UserPreferences preferences = (UserPreferences) ev.getSource();
       UserPreferences.Property property = UserPreferences.Property.valueOf(ev.getPropertyName());
       if (planComponent == null) {
         preferences.removePropertyChangeListener(property, this);
       } else {
         switch (property) {
-          case LANGUAGE :
-          case UNIT :
+          case LANGUAGE:
+          case UNIT:
             // Update format of tool tip text fields
-            for (Map.Entry<PlanController.EditableProperty, JFormattedTextField> toolTipTextFieldEntry : 
-              planComponent.toolTipEditableTextFields.entrySet()) {
-              updateToolTipTextFieldFormatterFactory(toolTipTextFieldEntry.getValue(), 
-                  toolTipTextFieldEntry.getKey(), preferences);
+            for (Map.Entry<PlanController.EditableProperty, JFormattedTextField> toolTipTextFieldEntry :
+                    planComponent.toolTipEditableTextFields.entrySet()) {
+              updateToolTipTextFieldFormatterFactory(toolTipTextFieldEntry.getValue(),
+                      toolTipTextFieldEntry.getKey(), preferences);
             }
             if (planComponent.horizontalRuler != null) {
               planComponent.horizontalRuler.repaint();
@@ -1010,17 +1014,17 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
               planComponent.verticalRuler.repaint();
             }
             break;
-          case DEFAULT_FONT_NAME :
+          case DEFAULT_FONT_NAME:
             planComponent.fonts = null;
             planComponent.fontsMetrics = null;
             planComponent.revalidate();
             break;
-          case WALL_PATTERN :
+          case WALL_PATTERN:
             planComponent.wallAreasCache = null;
             break;
-          case FURNITURE_VIEWED_FROM_TOP :
+          case FURNITURE_VIEWED_FROM_TOP:
             if (planComponent.furnitureTopViewIconsCache != null
-                && !preferences.isFurnitureViewedFromTop()) {
+                    && !preferences.isFurnitureViewedFromTop()) {
               planComponent.furnitureTopViewIconsCache = null;
             }
             break;
@@ -1039,38 +1043,38 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
   public void revalidate() {
     revalidate(true);
   }
-  
+
   /**
    * Revalidates this component after invalidating plan bounds cache if <code>invalidatePlanBoundsCache</code> is <code>true</code>
    * and updates viewport position if this component is displayed in a scrolled pane.
    */
   private void revalidate(boolean invalidatePlanBoundsCache) {
     boolean planBoundsCacheWereValid = this.planBoundsCacheValid;
-    final float planBoundsMinX = (float)getPlanBounds().getMinX();
-    final float planBoundsMinY = (float)getPlanBounds().getMinY();
+    final float planBoundsMinX = (float) getPlanBounds().getMinX();
+    final float planBoundsMinY = (float) getPlanBounds().getMinY();
     if (invalidatePlanBoundsCache
-        && planBoundsCacheWereValid) {      
+            && planBoundsCacheWereValid) {
       this.planBoundsCacheValid = false;
     }
-    
+
     // Revalidate and repaint
     super.revalidate();
     repaint();
 
     if (invalidatePlanBoundsCache
-        && getParent() instanceof JViewport) {
-      float planBoundsNewMinX = (float)getPlanBounds().getMinX();
-      float planBoundsNewMinY = (float)getPlanBounds().getMinY();
+            && getParent() instanceof JViewport) {
+      float planBoundsNewMinX = (float) getPlanBounds().getMinX();
+      float planBoundsNewMinY = (float) getPlanBounds().getMinY();
       // If plan bounds upper left corner diminished
       if (planBoundsNewMinX < planBoundsMinX
-          || planBoundsNewMinY < planBoundsMinY) {
-        JViewport parent = (JViewport)getParent();
+              || planBoundsNewMinY < planBoundsMinY) {
+        JViewport parent = (JViewport) getParent();
         final Point viewPosition = parent.getViewPosition();
         Dimension extentSize = parent.getExtentSize();
         Dimension viewSize = parent.getViewSize();
         // Update view position when scroll bars are visible
         if (extentSize.width < viewSize.width
-            || extentSize.height < viewSize.height) {
+                || extentSize.height < viewSize.height) {
           int deltaX = Math.round((planBoundsMinX - planBoundsNewMinX) * getScale());
           int deltaY = Math.round((planBoundsMinY - planBoundsNewMinY) * getScale());
           parent.setViewPosition(new Point(viewPosition.x + deltaX, viewPosition.y + deltaY));
@@ -1087,34 +1091,34 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
       this.verticalRuler.repaint();
     }
   }
-  
+
   /**
-   * Adds AWT mouse listeners to this component that calls back <code>controller</code> methods.  
+   * Adds AWT mouse listeners to this component that calls back <code>controller</code> methods.
    */
   private void addMouseListeners(final PlanController controller) {
     MouseInputAdapter mouseListener = new MouseInputAdapter() {
       private Point lastMousePressedLocation;
-      
+
       @Override
       public void mousePressed(MouseEvent ev) {
         this.lastMousePressedLocation = ev.getPoint();
         if (isEnabled() && !ev.isPopupTrigger()) {
-          requestFocusInWindow();          
+          requestFocusInWindow();
           if (ev.getButton() == MouseEvent.BUTTON1) {
-            boolean alignmentActivated = OperatingSystem.isWindows() || OperatingSystem.isMacOSX() 
-                ? ev.isShiftDown()
-                : ev.isShiftDown() && !ev.isAltDown();
-            boolean duplicationActivated = OperatingSystem.isMacOSX() 
-                ? ev.isAltDown() 
-                : ev.isControlDown();
-            boolean magnetismToggled = OperatingSystem.isWindows() 
-                ? ev.isAltDown() 
-                : (OperatingSystem.isMacOSX() 
-                       ? ev.isMetaDown()
-                       : ev.isShiftDown() && ev.isAltDown());
-            controller.pressMouse(convertXPixelToModel(ev.getX()), convertYPixelToModel(ev.getY()), 
-                ev.getClickCount(), ev.isShiftDown() && !ev.isControlDown() && !ev.isAltDown() && !ev.isMetaDown(), 
-                alignmentActivated, duplicationActivated, magnetismToggled);
+            boolean alignmentActivated = OperatingSystem.isWindows() || OperatingSystem.isMacOSX()
+                    ? ev.isShiftDown()
+                    : ev.isShiftDown() && !ev.isAltDown();
+            boolean duplicationActivated = OperatingSystem.isMacOSX()
+                    ? ev.isAltDown()
+                    : ev.isControlDown();
+            boolean magnetismToggled = OperatingSystem.isWindows()
+                    ? ev.isAltDown()
+                    : (OperatingSystem.isMacOSX()
+                    ? ev.isMetaDown()
+                    : ev.isShiftDown() && ev.isAltDown());
+            controller.pressMouse(convertXPixelToModel(ev.getX()), convertYPixelToModel(ev.getY()),
+                    ev.getClickCount(), ev.isShiftDown() && !ev.isControlDown() && !ev.isAltDown() && !ev.isMetaDown(),
+                    alignmentActivated, duplicationActivated, magnetismToggled);
           }
         }
       }
@@ -1130,7 +1134,7 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
       public void mouseMoved(MouseEvent ev) {
         // Ignore mouseMoved events that follows a mousePressed at the same location (Linux notifies this kind of events)
         if (this.lastMousePressedLocation != null
-            && !this.lastMousePressedLocation.equals(ev.getPoint())) {
+                && !this.lastMousePressedLocation.equals(ev.getPoint())) {
           this.lastMousePressedLocation = null;
         }
         if (this.lastMousePressedLocation == null) {
@@ -1149,98 +1153,98 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     };
     addMouseListener(mouseListener);
     addMouseMotionListener(mouseListener);
-    addMouseWheelListener(new MouseWheelListener() {        
-        public void mouseWheelMoved(MouseWheelEvent ev) {
-          if (ev.getModifiers() == getToolkit().getMenuShortcutKeyMask()) {
-            float mouseX = 0;
-            float mouseY = 0;
-            int deltaX = 0;
-            int deltaY = 0;
-            if (getParent() instanceof JViewport) {
-              mouseX = convertXPixelToModel(ev.getX());
-              mouseY = convertYPixelToModel(ev.getY());
-              Rectangle viewRectangle = ((JViewport)getParent()).getViewRect();
-              deltaX = ev.getX() - viewRectangle.x;
-              deltaY = ev.getY() - viewRectangle.y;
-            }
-
-            float oldScale = getScale();
-            controller.zoom((float)(ev.getWheelRotation() < 0 
-                ? Math.pow(1.05, -ev.getWheelRotation()) 
-                : Math.pow(0.95, ev.getWheelRotation())));
-            
-            if (getScale() != oldScale && getParent() instanceof JViewport) {
-              // If scale changed, update viewport position to keep the same coordinates under mouse cursor
-              ((JViewport)getParent()).setViewPosition(new Point());
-              moveView(mouseX - convertXPixelToModel(deltaX), mouseY - convertYPixelToModel(deltaY));
-            }
-          } else if (getMouseWheelListeners().length == 1) {
-            // If this listener is the only one registered on this component
-            // redispatch event to its parent (for default scroll bar management)
-            getParent().dispatchEvent(
-              new MouseWheelEvent(getParent(), ev.getID(), ev.getWhen(), 
-                  ev.getModifiersEx() | ev.getModifiers(), 
-                  ev.getX() - getX(), ev.getY() - getY(), 
-                  ev.getClickCount(), ev.isPopupTrigger(), ev.getScrollType(), 
-                  ev.getScrollAmount(), ev.getWheelRotation()));
+    addMouseWheelListener(new MouseWheelListener() {
+      public void mouseWheelMoved(MouseWheelEvent ev) {
+        if (ev.getModifiers() == getToolkit().getMenuShortcutKeyMask()) {
+          float mouseX = 0;
+          float mouseY = 0;
+          int deltaX = 0;
+          int deltaY = 0;
+          if (getParent() instanceof JViewport) {
+            mouseX = convertXPixelToModel(ev.getX());
+            mouseY = convertYPixelToModel(ev.getY());
+            Rectangle viewRectangle = ((JViewport) getParent()).getViewRect();
+            deltaX = ev.getX() - viewRectangle.x;
+            deltaY = ev.getY() - viewRectangle.y;
           }
+
+          float oldScale = getScale();
+          controller.zoom((float) (ev.getWheelRotation() < 0
+                  ? Math.pow(1.05, -ev.getWheelRotation())
+                  : Math.pow(0.95, ev.getWheelRotation())));
+
+          if (getScale() != oldScale && getParent() instanceof JViewport) {
+            // If scale changed, update viewport position to keep the same coordinates under mouse cursor
+            ((JViewport) getParent()).setViewPosition(new Point());
+            moveView(mouseX - convertXPixelToModel(deltaX), mouseY - convertYPixelToModel(deltaY));
+          }
+        } else if (getMouseWheelListeners().length == 1) {
+          // If this listener is the only one registered on this component
+          // redispatch event to its parent (for default scroll bar management)
+          getParent().dispatchEvent(
+                  new MouseWheelEvent(getParent(), ev.getID(), ev.getWhen(),
+                          ev.getModifiersEx() | ev.getModifiers(),
+                          ev.getX() - getX(), ev.getY() - getY(),
+                          ev.getClickCount(), ev.isPopupTrigger(), ev.getScrollType(),
+                          ev.getScrollAmount(), ev.getWheelRotation()));
         }
-      });
+      }
+    });
   }
 
   /**
-   * Adds AWT focus listener to this component that calls back <code>controller</code> 
-   * escape method on focus lost event.  
+   * Adds AWT focus listener to this component that calls back <code>controller</code>
+   * escape method on focus lost event.
    */
   private void addFocusListener(final PlanController controller) {
     addFocusListener(new FocusAdapter() {
-        @Override
-        public void focusLost(FocusEvent ev) {
-          controller.escape();
-        }
-      });
-    
+      @Override
+      public void focusLost(FocusEvent ev) {
+        controller.escape();
+      }
+    });
+
     if (OperatingSystem.isMacOSXLeopardOrSuperior()) {
       addPropertyChangeListener("Frame.active", new PropertyChangeListener() {
-          public void propertyChange(PropertyChangeEvent ev) {
-            if (!home.getSelectedItems().isEmpty()) {
-              // Repaint to update selection color
-              repaint();
-            }
+        public void propertyChange(PropertyChangeEvent ev) {
+          if (!home.getSelectedItems().isEmpty()) {
+            // Repaint to update selection color
+            repaint();
           }
-        });
+        }
+      });
     }
   }
-  
+
   /**
    * Adds a listener to the controller to follow changes in base plan modification state.
    */
   private void addControllerListener(final PlanController controller) {
-    controller.addPropertyChangeListener(PlanController.Property.BASE_PLAN_MODIFICATION_STATE, 
-        new PropertyChangeListener() {
-          public void propertyChange(PropertyChangeEvent ev) {
-            boolean wallsDoorsOrWindowsModification = controller.isBasePlanModificationState();
-            if (wallsDoorsOrWindowsModification) {
-              // Limit base plan modification state to walls creation/handling and doors or windows handling
-              if (controller.getMode() != PlanController.Mode.WALL_CREATION) {
-                for (Selectable item : (draggedItemsFeedback != null ? draggedItemsFeedback : home.getSelectedItems())) {
-                  if (!(item instanceof Wall) 
-                      && !(item instanceof HomePieceOfFurniture && ((HomePieceOfFurniture)item).isDoorOrWindow())) {
-                    wallsDoorsOrWindowsModification = false;
+    controller.addPropertyChangeListener(PlanController.Property.BASE_PLAN_MODIFICATION_STATE,
+            new PropertyChangeListener() {
+              public void propertyChange(PropertyChangeEvent ev) {
+                boolean wallsDoorsOrWindowsModification = controller.isBasePlanModificationState();
+                if (wallsDoorsOrWindowsModification) {
+                  // Limit base plan modification state to walls creation/handling and doors or windows handling
+                  if (controller.getMode() != PlanController.Mode.WALL_CREATION) {
+                    for (Selectable item : (draggedItemsFeedback != null ? draggedItemsFeedback : home.getSelectedItems())) {
+                      if (!(item instanceof Wall)
+                              && !(item instanceof HomePieceOfFurniture && ((HomePieceOfFurniture) item).isDoorOrWindow())) {
+                        wallsDoorsOrWindowsModification = false;
+                      }
+                    }
                   }
                 }
+                if (PlanComponent.this.wallsDoorsOrWindowsModification != wallsDoorsOrWindowsModification) {
+                  PlanComponent.this.wallsDoorsOrWindowsModification = wallsDoorsOrWindowsModification;
+                  repaint();
+                }
               }
-            }
-            if (PlanComponent.this.wallsDoorsOrWindowsModification != wallsDoorsOrWindowsModification) {
-              PlanComponent.this.wallsDoorsOrWindowsModification = wallsDoorsOrWindowsModification;
-              repaint();
-            }
-          }
-        });
+            });
   }
-  
+
   /**
-   * Installs default keys bound to actions. 
+   * Installs default keys bound to actions.
    */
   private void installDefaultKeyboardActions() {
     InputMap inputMap = getInputMap(WHEN_FOCUSED);
@@ -1285,7 +1289,7 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
       inputMap.put(KeyStroke.getKeyStroke("control ESCAPE"), ActionType.ESCAPE);
       inputMap.put(KeyStroke.getKeyStroke("control ENTER"), ActionType.ACTIVATE_EDITIION);
     }
-    
+
     if (OperatingSystem.isWindows()) {
       // Under Windows, magnetism toggled with Alt key 
       inputMap.put(KeyStroke.getKeyStroke("alt pressed ALT"), ActionType.TOGGLE_MAGNETISM_ON);
@@ -1333,7 +1337,7 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
       inputMap.put(KeyStroke.getKeyStroke("control released SHIFT"), ActionType.DEACTIVATE_ALIGNMENT);
       inputMap.put(KeyStroke.getKeyStroke("alt shift pressed SHIFT"), ActionType.ACTIVATE_ALIGNMENT);
       inputMap.put(KeyStroke.getKeyStroke("alt released SHIFT"), ActionType.DEACTIVATE_ALIGNMENT);
-      
+
     } else if (OperatingSystem.isMacOSX()) {
       inputMap.put(KeyStroke.getKeyStroke("alt shift pressed SHIFT"), ActionType.ACTIVATE_ALIGNMENT);
       inputMap.put(KeyStroke.getKeyStroke("alt released SHIFT"), ActionType.DEACTIVATE_ALIGNMENT);
@@ -1346,9 +1350,9 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
       inputMap.put(KeyStroke.getKeyStroke("control shift released ALT"), ActionType.ACTIVATE_ALIGNMENT);
     }
   }
-  
+
   /**
-   * Installs keys bound to actions during edition. 
+   * Installs keys bound to actions during edition.
    */
   private void installEditionKeyboardActions() {
     InputMap inputMap = getInputMap(WHEN_FOCUSED);
@@ -1377,9 +1381,9 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
       inputMap.put(KeyStroke.getKeyStroke("shift released CONTROL"), ActionType.DEACTIVATE_DUPLICATION);
     }
   }
- 
+
   /**
-   * Creates actions that calls back <code>controller</code> methods.  
+   * Creates actions that calls back <code>controller</code> methods.
    */
   private void createActions(final PlanController controller) {
     // Delete selection action 
@@ -1398,7 +1402,7 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     class MoveSelectionAction extends AbstractAction {
       private final int dx;
       private final int dy;
-      
+
       public MoveSelectionAction(int dx, int dy) {
         this.dx = dx;
         this.dy = dy;
@@ -1411,7 +1415,7 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     // Toggle magnetism action
     class ToggleMagnetismAction extends AbstractAction {
       private final boolean toggle;
-      
+
       public ToggleMagnetismAction(boolean toggle) {
         this.toggle = toggle;
       }
@@ -1423,11 +1427,11 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     // Alignment action
     class SetAlignmentActivatedAction extends AbstractAction {
       private final boolean alignmentActivated;
-      
+
       public SetAlignmentActivatedAction(boolean alignmentActivated) {
         this.alignmentActivated = alignmentActivated;
       }
-      
+
       public void actionPerformed(ActionEvent ev) {
         controller.setAlignmentActivated(this.alignmentActivated);
       }
@@ -1435,7 +1439,7 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     // Duplication action
     class SetDuplicationActivatedAction extends AbstractAction {
       private final boolean duplicationActivated;
-      
+
       public SetDuplicationActivatedAction(boolean duplicationActivated) {
         this.duplicationActivated = duplicationActivated;
       }
@@ -1447,7 +1451,7 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     // Edition action
     class SetEditionActivatedAction extends AbstractAction {
       private final boolean editionActivated;
-      
+
       public SetEditionActivatedAction(boolean editionActivated) {
         this.editionActivated = editionActivated;
       }
@@ -1480,19 +1484,19 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
   /**
    * Creates the text fields used in tool tip and their label.
    */
-  private void createToolTipTextFields(UserPreferences preferences, 
+  private void createToolTipTextFields(UserPreferences preferences,
                                        final PlanController controller) {
     this.toolTipEditableTextFields = new HashMap<PlanController.EditableProperty, JFormattedTextField>();
     Font toolTipFont = UIManager.getFont("ToolTip.font");
     for (final PlanController.EditableProperty editableProperty : PlanController.EditableProperty.values()) {
       final JFormattedTextField textField = new JFormattedTextField() {
-          @Override
-          public Dimension getPreferredSize() {
-            // Enlarge preferred size of one pixel
-            Dimension preferredSize = super.getPreferredSize();
-            return new Dimension(preferredSize.width + 1, preferredSize.height);
-          }
-        };
+        @Override
+        public Dimension getPreferredSize() {
+          // Enlarge preferred size of one pixel
+          Dimension preferredSize = super.getPreferredSize();
+          return new Dimension(preferredSize.width + 1, preferredSize.height);
+        }
+      };
       updateToolTipTextFieldFormatterFactory(textField, editableProperty, preferences);
       textField.setFont(toolTipFont);
       textField.setOpaque(false);
@@ -1500,23 +1504,23 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
       if (controller != null) {
         // Add a listener to notify changes to controller
         textField.getDocument().addDocumentListener(new DocumentListener() {
-            public void changedUpdate(DocumentEvent ev) {
-              try {
-                textField.commitEdit();
-                controller.updateEditableProperty(editableProperty, textField.getValue());
-              } catch (ParseException ex) {
-                controller.updateEditableProperty(editableProperty, null);
-              }
+          public void changedUpdate(DocumentEvent ev) {
+            try {
+              textField.commitEdit();
+              controller.updateEditableProperty(editableProperty, textField.getValue());
+            } catch (ParseException ex) {
+              controller.updateEditableProperty(editableProperty, null);
             }
-    
-            public void insertUpdate(DocumentEvent ev) {
-              changedUpdate(ev);
-            }
-    
-            public void removeUpdate(DocumentEvent ev) {
-              changedUpdate(ev);
-            }
-          });
+          }
+
+          public void insertUpdate(DocumentEvent ev) {
+            changedUpdate(ev);
+          }
+
+          public void removeUpdate(DocumentEvent ev) {
+            changedUpdate(ev);
+          }
+        });
       }
 
       this.toolTipEditableTextFields.put(editableProperty, textField);
@@ -1527,46 +1531,46 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
                                                              PlanController.EditableProperty editableProperty,
                                                              UserPreferences preferences) {
     InternationalFormatter formatter;
-    if (editableProperty == PlanController.EditableProperty.ANGLE) {      
+    if (editableProperty == PlanController.EditableProperty.ANGLE) {
       formatter = new NumberFormatter(NumberFormat.getNumberInstance());
     } else {
       Format lengthFormat = preferences.getLengthUnit().getFormat();
       if (lengthFormat instanceof NumberFormat) {
-        formatter = new NumberFormatter((NumberFormat)lengthFormat);
+        formatter = new NumberFormatter((NumberFormat) lengthFormat);
       } else {
         formatter = new InternationalFormatter(lengthFormat);
       }
     }
     textField.setFormatterFactory(new DefaultFormatterFactory(formatter));
   }
-  
+
   /**
    * Returns a custom cursor with a hot spot point at center of cursor.
-   */ 
-  private Cursor createCustomCursor(String smallCursorImageResource, 
+   */
+  private Cursor createCustomCursor(String smallCursorImageResource,
                                     String largeCursorImageResource,
                                     String cursorName,
-                                    int    defaultCursor) {
+                                    int defaultCursor) {
     if (OperatingSystem.isMacOSX()) {
       smallCursorImageResource = smallCursorImageResource.replace(".png", "-macosx.png");
     }
-    return createCustomCursor(PlanComponent.class.getResource(smallCursorImageResource), 
-        PlanComponent.class.getResource(largeCursorImageResource), 
-        0.5f, 0.5f, cursorName, 
-        Cursor.getPredefinedCursor(defaultCursor));
+    return createCustomCursor(PlanComponent.class.getResource(smallCursorImageResource),
+            PlanComponent.class.getResource(largeCursorImageResource),
+            0.5f, 0.5f, cursorName,
+            Cursor.getPredefinedCursor(defaultCursor));
   }
 
   /**
    * Returns a custom cursor created from images in parameters.
-   */ 
-  protected Cursor createCustomCursor(URL smallCursorImageUrl, 
+   */
+  protected Cursor createCustomCursor(URL smallCursorImageUrl,
                                       URL largeCursorImageUrl,
                                       float xCursorHotSpot,
                                       float yCursorHotSpot,
                                       String cursorName,
                                       Cursor defaultCursor) {
-    return SwingTools.createCustomCursor(smallCursorImageUrl, largeCursorImageUrl, 
-        xCursorHotSpot, yCursorHotSpot, cursorName, defaultCursor);
+    return SwingTools.createCustomCursor(smallCursorImageUrl, largeCursorImageUrl,
+            xCursorHotSpot, yCursorHotSpot, cursorName, defaultCursor);
   }
 
   /**
@@ -1580,21 +1584,21 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
       Insets insets = getInsets();
       Rectangle2D planBounds = getPlanBounds();
       return new Dimension(
-          Math.round(((float)planBounds.getWidth() + MARGIN * 2)
-                     * getScale()) + insets.left + insets.right,
-          Math.round(((float)planBounds.getHeight() + MARGIN * 2)
-                     * getScale()) + insets.top + insets.bottom);
+              Math.round(((float) planBounds.getWidth() + MARGIN * 2)
+                      * getScale()) + insets.left + insets.right,
+              Math.round(((float) planBounds.getHeight() + MARGIN * 2)
+                      * getScale()) + insets.top + insets.bottom);
     }
   }
-  
+
   /**
    * Returns the bounds of the plan displayed by this component.
    */
   private Rectangle2D getPlanBounds() {
     if (!this.planBoundsCacheValid) {
       // Always enlarge plan bounds only when plan component is a child of a scroll pane 
-      if (this.planBoundsCache == null 
-          || !(getParent() instanceof JViewport)) {
+      if (this.planBoundsCache == null
+              || !(getParent() instanceof JViewport)) {
         // Ensure plan bounds are 10 x 10 meters wide at minimum
         this.planBoundsCache = new Rectangle2D.Float(0, 0, 1000, 1000);
       }
@@ -1604,14 +1608,14 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
         if (backgroundImage != null) {
           this.planBoundsCache.add(-backgroundImage.getXOrigin(), -backgroundImage.getYOrigin());
           this.planBoundsCache.add(this.backgroundImageCache.getWidth() * backgroundImage.getScale() - backgroundImage.getXOrigin(),
-              this.backgroundImageCache.getHeight() * backgroundImage.getScale() - backgroundImage.getYOrigin());
+                  this.backgroundImageCache.getHeight() * backgroundImage.getScale() - backgroundImage.getYOrigin());
         }
         for (Level level : this.home.getLevels()) {
           BackgroundImage levelBackgroundImage = level.getBackgroundImage();
           if (levelBackgroundImage != null) {
             this.planBoundsCache.add(-levelBackgroundImage.getXOrigin(), -levelBackgroundImage.getYOrigin());
             this.planBoundsCache.add(this.backgroundImageCache.getWidth() * levelBackgroundImage.getScale() - levelBackgroundImage.getXOrigin(),
-                this.backgroundImageCache.getHeight() * levelBackgroundImage.getScale() - levelBackgroundImage.getYOrigin());
+                    this.backgroundImageCache.getHeight() * levelBackgroundImage.getScale() - levelBackgroundImage.getYOrigin());
           }
         }
       }
@@ -1619,22 +1623,22 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
       if (homeItemsBounds != null) {
         this.planBoundsCache.add(homeItemsBounds);
       }
-      for (float [] point : this.home.getObserverCamera().getPoints()) {
-        this.planBoundsCache.add(point [0], point [1]);
+      for (float[] point : this.home.getObserverCamera().getPoints()) {
+        this.planBoundsCache.add(point[0], point[1]);
       }
       this.planBoundsCacheValid = true;
     }
     return this.planBoundsCache;
   }
-  
+
   /**
-   * Returns the collection of walls, furniture, rooms and dimension lines of the home 
+   * Returns the collection of walls, furniture, rooms and dimension lines of the home
    * painted by this component wherever the level they belong to is selected or not.
    */
   protected List<Selectable> getPaintedItems() {
     return this.home.getSelectableViewableItems();
   }
-  
+
   /**
    * Returns the bounds of the given collection of <code>items</code>.
    */
@@ -1646,21 +1650,21 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
       } else {
         itemsBounds.add(getItemBounds(g, item));
       }
-    } 
+    }
     return itemsBounds;
   }
-  
+
   /**
    * Returns the bounds of the given <code>item</code>.
    */
   protected Rectangle2D getItemBounds(Graphics g, Selectable item) {
     // Add to bounds all the visible items
-    float [][] points = item.getPoints();
-    Rectangle2D itemBounds = new Rectangle2D.Float(points [0][0], points [0][1], 0, 0);
+    float[][] points = item.getPoints();
+    Rectangle2D itemBounds = new Rectangle2D.Float(points[0][0], points[0][1], 0, 0);
     for (int i = 1; i < points.length; i++) {
-      itemBounds.add(points [i][0], points [i][1]);
+      itemBounds.add(points[i][0], points[i][1]);
     }
-    
+
     // Retrieve used font
     Font componentFont;
     if (g != null) {
@@ -1668,80 +1672,80 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     } else {
       componentFont = getFont();
     }
-    
+
     if (item instanceof Room) {
       // Add to bounds the displayed name and area bounds of each room 
-      Room room = (Room)item;
+      Room room = (Room) item;
       float xRoomCenter = room.getXCenter();
       float yRoomCenter = room.getYCenter();
       String roomName = room.getName();
       if (roomName != null && roomName.length() > 0) {
-        addTextBounds(room.getClass(), 
-            roomName, room.getNameStyle(), 
-            xRoomCenter + room.getNameXOffset(), 
-            yRoomCenter + room.getNameYOffset(), room.getNameAngle(), itemBounds);
+        addTextBounds(room.getClass(),
+                roomName, room.getNameStyle(),
+                xRoomCenter + room.getNameXOffset(),
+                yRoomCenter + room.getNameYOffset(), room.getNameAngle(), itemBounds);
       }
       if (room.isAreaVisible()) {
         float area = room.getArea();
         if (area > 0.01f) {
           String areaText = this.preferences.getLengthUnit().getAreaFormatWithUnit().format(area);
-          addTextBounds(room.getClass(), 
-              areaText, room.getAreaStyle(), 
-              xRoomCenter + room.getAreaXOffset(), 
-              yRoomCenter + room.getAreaYOffset(), room.getAreaAngle(), itemBounds);
+          addTextBounds(room.getClass(),
+                  areaText, room.getAreaStyle(),
+                  xRoomCenter + room.getAreaXOffset(),
+                  yRoomCenter + room.getAreaYOffset(), room.getAreaAngle(), itemBounds);
         }
       }
     } else if (item instanceof Polyline) {
-      Polyline polyline = (Polyline)item;      
+      Polyline polyline = (Polyline) item;
       return getPolylineShape(polyline).getBounds2D();
     } else if (item instanceof HomePieceOfFurniture) {
       if (item instanceof HomeDoorOrWindow) {
-        HomeDoorOrWindow doorOrWindow = (HomeDoorOrWindow)item;
+        HomeDoorOrWindow doorOrWindow = (HomeDoorOrWindow) item;
         // Add to bounds door and window sashes 
         for (Sash sash : doorOrWindow.getSashes()) {
           itemBounds.add(getDoorOrWindowSashShape(doorOrWindow, sash).getBounds2D());
         }
       } else if (item instanceof HomeFurnitureGroup) {
-        itemBounds.add(getItemsBounds(g, ((HomeFurnitureGroup)item).getFurniture()));
+        itemBounds.add(getItemsBounds(g, ((HomeFurnitureGroup) item).getFurniture()));
       }
       // Add to bounds the displayed name of the piece of furniture 
-      HomePieceOfFurniture piece = (HomePieceOfFurniture)item;
+      HomePieceOfFurniture piece = (HomePieceOfFurniture) item;
       String pieceName = piece.getName();
       if (piece.isVisible()
-          && piece.isNameVisible()
-          && pieceName.length() > 0) {
-        addTextBounds(piece.getClass(), 
-            pieceName, piece.getNameStyle(), 
-            piece.getX() + piece.getNameXOffset(), 
-            piece.getY() + piece.getNameYOffset(), piece.getNameAngle(), itemBounds);
+              && piece.isNameVisible()
+              && pieceName.length() > 0) {
+        addTextBounds(piece.getClass(),
+                pieceName, piece.getNameStyle(),
+                piece.getX() + piece.getNameXOffset(),
+                piece.getY() + piece.getNameYOffset(), piece.getNameAngle(), itemBounds);
       }
     } else if (item instanceof DimensionLine) {
       // Add to bounds the text bounds of the dimension line length 
-      DimensionLine dimensionLine = (DimensionLine)item;
+      DimensionLine dimensionLine = (DimensionLine) item;
       float dimensionLineLength = dimensionLine.getLength();
       String lengthText = this.preferences.getLengthUnit().getFormat().format(dimensionLineLength);
       TextStyle lengthStyle = dimensionLine.getLengthStyle();
       if (lengthStyle == null) {
         lengthStyle = this.preferences.getDefaultTextStyle(dimensionLine.getClass());
-      }          
+      }
       FontMetrics lengthFontMetrics = getFontMetrics(componentFont, lengthStyle);
       Rectangle2D lengthTextBounds = lengthFontMetrics.getStringBounds(lengthText, g);
       // Transform length text bounding rectangle corners to their real location
-      double angle = Math.atan2(dimensionLine.getYEnd() - dimensionLine.getYStart(), 
-          dimensionLine.getXEnd() - dimensionLine.getXStart());
+      double angle = Math.atan2(dimensionLine.getYEnd() - dimensionLine.getYStart(),
+              dimensionLine.getXEnd() - dimensionLine.getXStart());
       AffineTransform transform = AffineTransform.getTranslateInstance(
-          dimensionLine.getXStart(), dimensionLine.getYStart());
+              dimensionLine.getXStart(), dimensionLine.getYStart());
       transform.rotate(angle);
       transform.translate(0, dimensionLine.getOffset());
-      transform.translate((dimensionLineLength - lengthTextBounds.getWidth()) / 2, 
-          dimensionLine.getOffset() <= 0 
-              ? -lengthFontMetrics.getDescent() - 1
-              : lengthFontMetrics.getAscent() + 1);
+      transform.translate((dimensionLineLength - lengthTextBounds.getWidth()) / 2,
+              dimensionLine.getOffset() <= 0
+                      ? -lengthFontMetrics.getDescent() - 1
+                      : lengthFontMetrics.getAscent() + 1);
       GeneralPath lengthTextBoundsPath = new GeneralPath(lengthTextBounds);
       for (PathIterator it = lengthTextBoundsPath.getPathIterator(transform); !it.isDone(); it.next()) {
-        float [] pathPoint = new float[2];
+        float[] pathPoint = new float[2];
         if (it.currentSegment(pathPoint) != PathIterator.SEG_CLOSE) {
-          itemBounds.add(pathPoint [0], pathPoint [1]);
+          itemBounds.add(pathPoint[0], pathPoint[1]);
         }
       }
       // Add to bounds the end lines drawn at dimension line start and end  
@@ -1749,65 +1753,65 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
       transform.rotate(angle);
       transform.translate(0, dimensionLine.getOffset());
       for (PathIterator it = DIMENSION_LINE_END.getPathIterator(transform); !it.isDone(); it.next()) {
-        float [] pathPoint = new float[2];
+        float[] pathPoint = new float[2];
         if (it.currentSegment(pathPoint) != PathIterator.SEG_CLOSE) {
-          itemBounds.add(pathPoint [0], pathPoint [1]);
+          itemBounds.add(pathPoint[0], pathPoint[1]);
         }
       }
       transform.translate(dimensionLineLength, 0);
       for (PathIterator it = DIMENSION_LINE_END.getPathIterator(transform); !it.isDone(); it.next()) {
-        float [] pathPoint = new float[2];
+        float[] pathPoint = new float[2];
         if (it.currentSegment(pathPoint) != PathIterator.SEG_CLOSE) {
-          itemBounds.add(pathPoint [0], pathPoint [1]);
+          itemBounds.add(pathPoint[0], pathPoint[1]);
         }
       }
     } else if (item instanceof Label) {
       // Add to bounds the displayed text of a label 
-      Label label = (Label)item;
-      addTextBounds(label.getClass(), 
-          label.getText(), label.getStyle(), label.getX(), label.getY(), label.getAngle(), itemBounds);
+      Label label = (Label) item;
+      addTextBounds(label.getClass(),
+              label.getText(), label.getStyle(), label.getX(), label.getY(), label.getAngle(), itemBounds);
     } else if (item instanceof Compass) {
-      Compass compass = (Compass)item;
+      Compass compass = (Compass) item;
       AffineTransform transform = AffineTransform.getTranslateInstance(compass.getX(), compass.getY());
       transform.scale(compass.getDiameter(), compass.getDiameter());
       transform.rotate(compass.getNorthDirection());
       return COMPASS.createTransformedShape(transform).getBounds2D();
-    } 
+    }
     return itemBounds;
   }
-  
+
   /**
    * Add <code>text</code> bounds to the given rectangle <code>bounds</code>.
    */
   private void addTextBounds(Class<? extends Selectable> selectableClass,
-                             String text, TextStyle style, 
+                             String text, TextStyle style,
                              float x, float y, float angle,
                              Rectangle2D bounds) {
     if (style == null) {
       style = this.preferences.getDefaultTextStyle(selectableClass);
-    }          
-    for (float [] points : getTextBounds(text, style, x, y, angle)) {
-      bounds.add(points [0], points [1]);
+    }
+    for (float[] points : getTextBounds(text, style, x, y, angle)) {
+      bounds.add(points[0], points[1]);
     }
   }
-  
+
   /**
    * Returns the coordinates of the bounding rectangle of the <code>text</code> centered at
-   * the point (<code>x</code>,<code>y</code>).  
+   * the point (<code>x</code>,<code>y</code>).
    */
-  public float [][] getTextBounds(String text, TextStyle style, 
-                                  float x, float y, float angle) {
+  public float[][] getTextBounds(String text, TextStyle style,
+                                 float x, float y, float angle) {
     FontMetrics fontMetrics = getFontMetrics(getFont(), style);
     Rectangle2D textBounds = fontMetrics.getStringBounds(text, null);
-    float halfTextLength = (float)textBounds.getWidth() / 2;
+    float halfTextLength = (float) textBounds.getWidth() / 2;
     if (angle == 0) {
-      float minY = (float)(y + textBounds.getY());
-      float maxY = (float)(minY + textBounds.getHeight());
-      return new float [][] {
-          {x - halfTextLength, minY},
-          {x + halfTextLength, minY},
-          {x + halfTextLength, maxY},
-          {x - halfTextLength, maxY}};
+      float minY = (float) (y + textBounds.getY());
+      float maxY = (float) (minY + textBounds.getHeight());
+      return new float[][]{
+              {x - halfTextLength, minY},
+              {x + halfTextLength, minY},
+              {x + halfTextLength, maxY},
+              {x - halfTextLength, maxY}};
     } else {
       // Transform text bounding rectangle corners to their real location
       AffineTransform transform = new AffineTransform();
@@ -1815,17 +1819,17 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
       transform.rotate(angle);
       transform.translate(-halfTextLength, 0);
       GeneralPath textBoundsPath = new GeneralPath(textBounds);
-      List<float []> textPoints = new ArrayList<float[]>(4);
+      List<float[]> textPoints = new ArrayList<float[]>(4);
       for (PathIterator it = textBoundsPath.getPathIterator(transform); !it.isDone(); it.next()) {
-        float [] pathPoint = new float[2];
+        float[] pathPoint = new float[2];
         if (it.currentSegment(pathPoint) != PathIterator.SEG_CLOSE) {
           textPoints.add(pathPoint);
         }
       }
-      return textPoints.toArray(new float [textPoints.size()][]);
+      return textPoints.toArray(new float[textPoints.size()][]);
     }
   }
-  
+
   /**
    * Returns the AWT font matching a given text style.
    */
@@ -1843,8 +1847,8 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
         fontStyle |= Font.ITALIC;
       }
       if (defaultFont == null
-          || this.preferences.getDefaultFontName() != null
-          || textStyle.getFontName() != null) {
+              || this.preferences.getDefaultFontName() != null
+              || textStyle.getFontName() != null) {
         String fontName = textStyle.getFontName();
         if (fontName == null) {
           fontName = this.preferences.getDefaultFontName();
@@ -1874,7 +1878,7 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
 
   /**
    * Sets whether plan's background should be painted or not.
-   * Background may include grid and an image.   
+   * Background may include grid and an image.
    */
   public void setBackgroundPainted(boolean backgroundPainted) {
     if (this.backgroundPainted != backgroundPainted) {
@@ -1882,7 +1886,7 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
       repaint();
     }
   }
-  
+
   /**
    * Returns <code>true</code> if plan's background should be painted.
    */
@@ -1899,40 +1903,40 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
       repaint();
     }
   }
-  
+
   /**
    * Returns <code>true</code> if the outline of home selected items should be painted.
    */
   public boolean isSelectedItemsOutlinePainted() {
     return this.selectedItemsOutlinePainted;
   }
-  
+
   /**
    * Paints this component.
    */
   @Override
   protected void paintComponent(Graphics g) {
-    Graphics2D g2D = (Graphics2D)g.create();
+    Graphics2D g2D = (Graphics2D) g.create();
     if (this.backgroundPainted) {
       paintBackground(g2D, getBackgroundColor(PaintMode.PAINT));
     }
     Insets insets = getInsets();
     // Clip component to avoid drawing in empty borders
-    g2D.clipRect(insets.left, insets.top, 
-        getWidth() - insets.left - insets.right, 
-        getHeight() - insets.top - insets.bottom);
+    g2D.clipRect(insets.left, insets.top,
+            getWidth() - insets.left - insets.right,
+            getHeight() - insets.top - insets.bottom);
     // Change component coordinates system to plan system
-    Rectangle2D planBounds = getPlanBounds();    
+    Rectangle2D planBounds = getPlanBounds();
     float paintScale = getScale();
     g2D.translate(insets.left + (MARGIN - planBounds.getMinX()) * paintScale,
-        insets.top + (MARGIN - planBounds.getMinY()) * paintScale);
+            insets.top + (MARGIN - planBounds.getMinY()) * paintScale);
     g2D.scale(paintScale, paintScale);
     setRenderingHints(g2D);
     try {
       paintContent(g2D, paintScale, PaintMode.PAINT);
     } catch (InterruptedIOException ex) {
       // Ignore exception because it may happen only in EXPORT paint mode 
-    }   
+    }
     g2D.dispose();
   }
 
@@ -1941,22 +1945,22 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
    * to make it fill <code>pageFormat</code> imageable size.
    */
   public float getPrintPreferredScale(Graphics g, PageFormat pageFormat) {
-    List<Selectable> printedItems = getPaintedItems(); 
+    List<Selectable> printedItems = getPaintedItems();
     Rectangle2D printedItemBounds = getItemsBounds(g, printedItems);
     if (printedItemBounds != null) {
-      float imageableWidthCm = LengthUnit.inchToCentimeter((float)pageFormat.getImageableWidth() / 72);
-      float imageableHeightCm = LengthUnit.inchToCentimeter((float)pageFormat.getImageableHeight() / 72);
+      float imageableWidthCm = LengthUnit.inchToCentimeter((float) pageFormat.getImageableWidth() / 72);
+      float imageableHeightCm = LengthUnit.inchToCentimeter((float) pageFormat.getImageableHeight() / 72);
       float extraMargin = getStrokeWidthExtraMargin(printedItems, PaintMode.PRINT);
       // Compute the largest integer scale possible
-      int scaleInverse = (int)Math.ceil(Math.max(
-          (printedItemBounds.getWidth() + 2 * extraMargin) / imageableWidthCm,
-          (printedItemBounds.getHeight() + 2 * extraMargin) / imageableHeightCm));
+      int scaleInverse = (int) Math.ceil(Math.max(
+              (printedItemBounds.getWidth() + 2 * extraMargin) / imageableWidthCm,
+              (printedItemBounds.getHeight() + 2 * extraMargin) / imageableHeightCm));
       return 1f / scaleInverse;
     } else {
       return 0;
     }
   }
-  
+
   /**
    * Returns the margin that should be added around home items bounds to ensure their
    * line stroke width is always fully visible.
@@ -1965,34 +1969,34 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     float extraMargin = BORDER_STROKE_WIDTH;
     if (Home.getFurnitureSubList(items).size() > 0) {
       extraMargin = Math.max(extraMargin, getStrokeWidth(HomePieceOfFurniture.class, paintMode));
-    } 
+    }
     if (Home.getWallsSubList(items).size() > 0) {
       extraMargin = Math.max(extraMargin, getStrokeWidth(Wall.class, paintMode));
-    } 
+    }
     if (Home.getRoomsSubList(items).size() > 0) {
       extraMargin = Math.max(extraMargin, getStrokeWidth(Room.class, paintMode));
     }
     List<Polyline> polylines = Home.getPolylinesSubList(items);
     if (polylines.size() > 0) {
-      for (Polyline polyline : polylines) {        
-        extraMargin = Math.max(extraMargin, polyline.getStartArrowStyle() != null ||  polyline.getEndArrowStyle() != null 
-            ? 1.5f * polyline.getThickness()
-            : polyline.getThickness());
+      for (Polyline polyline : polylines) {
+        extraMargin = Math.max(extraMargin, polyline.getStartArrowStyle() != null || polyline.getEndArrowStyle() != null
+                ? 1.5f * polyline.getThickness()
+                : polyline.getThickness());
       }
-    }    
+    }
     if (Home.getDimensionLinesSubList(items).size() > 0) {
       extraMargin = Math.max(extraMargin, getStrokeWidth(DimensionLine.class, paintMode));
-    }    
+    }
     return extraMargin / 2;
   }
-  
+
   /**
    * Returns the stroke width used to paint an item of the given class.
    */
   private float getStrokeWidth(Class<? extends Selectable> itemClass, PaintMode paintMode) {
-    float strokeWidth; 
+    float strokeWidth;
     if (Wall.class.isAssignableFrom(itemClass)
-        || Room.class.isAssignableFrom(itemClass)) {
+            || Room.class.isAssignableFrom(itemClass)) {
       strokeWidth = WALL_STROKE_WIDTH;
     } else {
       strokeWidth = BORDER_STROKE_WIDTH;
@@ -2002,15 +2006,34 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     }
     return strokeWidth;
   }
-  
+
   /**
-   * Prints this component plan at the scale given in the home print attributes or at a scale 
+   * Prints this component plan at the scale given in the home print attributes or at a scale
    * that makes it fill <code>pageFormat</code> imageable size if this attribute is <code>null</code>.
    */
   public int print(Graphics g, PageFormat pageFormat, int pageIndex) {
-    List<Selectable> printedItems = getPaintedItems(); 
-    Rectangle2D printedItemBounds = getItemsBounds(g, printedItems);
-    if (printedItemBounds != null) {
+    // Get viewable levels in order
+    List<Level> viewableLevels = new ArrayList<Level>();
+    for (Level level : this.home.getLevels()) {
+      if (level.isViewable()) {
+        viewableLevels.add(level);
+      }
+    }
+    // If pageIndex exceeds the number of viewable levels, return NO_SUCH_PAGE
+    if (pageIndex >= viewableLevels.size()) {
+      return NO_SUCH_PAGE;
+    }
+    // Save the originally selected level and switch to the target level
+    Level originalLevel = this.home.getSelectedLevel();
+    Level targetLevel = viewableLevels.get(pageIndex);
+    this.home.setSelectedLevel(targetLevel);
+
+    try {
+      List<Selectable> printedItems = getPaintedItems();
+      Rectangle2D printedItemBounds = getItemsBounds(g, printedItems);
+      if (printedItemBounds == null) {
+        return NO_SUCH_PAGE;
+      }
       double imageableX = pageFormat.getImageableX();
       double imageableY = pageFormat.getImageableY();
       double imageableWidth = pageFormat.getImageableWidth();
@@ -2023,21 +2046,19 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
       if (this.home.getPrint() == null || this.home.getPrint().getPlanScale() == null) {
         // Compute a scale that ensures the plan will fill the component if plan scale is null
         printScale = getPrintPreferredScale(g, pageFormat) * LengthUnit.centimeterToInch(72);
-        if (pageIndex > 0) {
-          return NO_SUCH_PAGE;
-        }
+
         pagesPerRow = 1;
         pagesPerColumn = 1;
-        rowIndex   = 0;
+        rowIndex = 0;
         columnIndex = 0;
       } else {
         // Apply print scale to paper size expressed in 1/72nds of an inch
         printScale = this.home.getPrint().getPlanScale().floatValue() * LengthUnit.centimeterToInch(72);
-        pagesPerRow = (int)(printedItemBounds.getWidth() * printScale / imageableWidth);
+        pagesPerRow = (int) (printedItemBounds.getWidth() * printScale / imageableWidth);
         if (printedItemBounds.getWidth() * printScale != imageableWidth) {
           pagesPerRow++;
         }
-        pagesPerColumn = (int)(printedItemBounds.getHeight() * printScale / imageableHeight);
+        pagesPerColumn = (int) (printedItemBounds.getHeight() * printScale / imageableHeight);
         if (printedItemBounds.getHeight() * printScale != imageableHeight) {
           pagesPerColumn++;
         }
@@ -2047,34 +2068,34 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
         rowIndex = pageIndex / pagesPerRow;
         columnIndex = pageIndex - rowIndex * pagesPerRow;
       }
-          
-      Graphics2D g2D = (Graphics2D)g.create();
+
+      Graphics2D g2D = (Graphics2D) g.create();
       g2D.clip(new Rectangle2D.Double(imageableX, imageableY, imageableWidth, imageableHeight));
       // Change coordinates system to paper imageable origin
       g2D.translate(imageableX - columnIndex * imageableWidth, imageableY - rowIndex * imageableHeight);
       g2D.scale(printScale, printScale);
       float extraMargin = getStrokeWidthExtraMargin(printedItems, PaintMode.PRINT);
       g2D.translate(-printedItemBounds.getMinX() + extraMargin,
-          -printedItemBounds.getMinY() + extraMargin);
+              -printedItemBounds.getMinY() + extraMargin);
       // Center plan in component if possible
-      g2D.translate(Math.max(0, 
-              (imageableWidth * pagesPerRow / printScale - printedItemBounds.getWidth() - 2 * extraMargin) / 2), 
-          Math.max(0, 
-              (imageableHeight * pagesPerColumn / printScale - printedItemBounds.getHeight() - 2 * extraMargin) / 2));
+      g2D.translate(Math.max(0,
+                      (imageableWidth * pagesPerRow / printScale - printedItemBounds.getWidth() - 2 * extraMargin) / 2),
+              Math.max(0,
+                      (imageableHeight * pagesPerColumn / printScale - printedItemBounds.getHeight() - 2 * extraMargin) / 2));
       setRenderingHints(g2D);
       try {
         // Print component contents
         paintContent(g2D, printScale, PaintMode.PRINT);
       } catch (InterruptedIOException ex) {
-        // Ignore exception because it may happen only in EXPORT paint mode 
-      }   
+        // Ignore exception because it may happen only in EXPORT paint mode
+      }
       g2D.dispose();
       return PAGE_EXISTS;
-    } else {
-      return NO_SUCH_PAGE;
+    } finally {
+      // restore the originally selected level
+      this.home.setSelectedLevel(originalLevel);
     }
   }
-  
   /**
    * Returns an image of the selected items displayed by this component 
    * (camera excepted) with no outline at scale 1/1 (1 pixel = 1cm).

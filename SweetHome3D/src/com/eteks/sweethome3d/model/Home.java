@@ -327,7 +327,7 @@ public class Home implements Serializable, Cloneable {
     // Create a default top camera that matches default point of view 
     this.topCamera = new Camera(50, 1050, 1010, 
         (float)Math.PI, (float)Math.PI / 4, (float)Math.PI * 63 / 180);
-    // Create a default observer camera (use a 63° field of view equivalent to a 35mm lens for a 24x36 film)
+    // Create a default observer camera (use a 63ï¿½ field of view equivalent to a 35mm lens for a 24x36 film)
     this.observerCamera = new ObserverCamera(50, 50, 170, 
         7 * (float)Math.PI / 4, (float)Math.PI / 16, (float)Math.PI * 63 / 180);
     this.storedCameras = Collections.emptyList();
@@ -1219,11 +1219,10 @@ public class Home implements Serializable, Cloneable {
     }
     return homeItems;
   }
-
   /**
    * Adds the viewable items to the set of selectable viewable items.
    */
-  private <T extends Selectable> void addViewableItems(Collection<T> items, 
+  private <T extends Selectable> void addViewableItems(Collection<T> items,
                                                        List<Selectable> selectableViewableItems) {
     for (T item : items) {
       if (item instanceof Elevatable) {
@@ -1235,7 +1234,7 @@ public class Home implements Serializable, Cloneable {
       }
     }
   }
-  
+
   /**
    * Returns <code>true</code> if this home doesn't contain any item i.e.  
    * no piece of furniture, no wall, no room, no dimension line and no label.
