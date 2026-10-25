@@ -125,12 +125,12 @@ import com.eteks.sweethome3d.viewcontroller.View;
 public class FurnitureTable extends JTable implements View, Printable {
   private static final String EXPANDED_ROWS_VISUAL_PROPERTY = "com.eteks.sweethome3d.SweetHome3D.ExpandedGroups";
 
-  private UserPreferences preferences;
-  private ListSelectionListener tableSelectionListener;
-  private boolean selectionByUser;
-  private int furnitureInformationRow;
-  private Popup furnitureInformationPopup;
-  private AWTEventListener informationPopupRemovalListener;
+  private UserPreferences        preferences;
+  private ListSelectionListener  tableSelectionListener;
+  private boolean                selectionByUser;
+  private int                    furnitureInformationRow;
+  private Popup                  furnitureInformationPopup;
+  private AWTEventListener       informationPopupRemovalListener;
 
   /**
    * Creates a table that displays furniture of <code>home</code>.
@@ -168,7 +168,7 @@ public class FurnitureTable extends JTable implements View, Printable {
     }
     addHomeListener(home, controller);
     addUserPreferencesListener(preferences);
-
+    
     if (OperatingSystem.isJavaVersionGreaterOrEqual("1.6")) {
       try {
         // Call Java 6 setDropMode(DropMode.INSERT_ROWS) by reflection to avoid changing selected row during a drag and drop
@@ -184,41 +184,41 @@ public class FurnitureTable extends JTable implements View, Printable {
       }
     }
   }
-
+  
   /**
    * Adds selection listeners to this table.
    */
   private void addSelectionListeners(final Home home,
-                                     final FurnitureController controller) {
+                                     final FurnitureController controller) {   
     final SelectionListener homeSelectionListener = new SelectionListener() {
-      public void selectionChanged(SelectionEvent ev) {
-        updateTableSelectedFurniture(home);
-        storeExpandedRows(home, controller);
-      }
-    };
-    this.tableSelectionListener = new ListSelectionListener() {
-      public void valueChanged(ListSelectionEvent ev) {
-        selectionByUser = true;
-        int[] selectedRows = getSelectedRows();
-        // Build the list of selected furniture
-        List<HomePieceOfFurniture> selectedFurniture = new ArrayList<HomePieceOfFurniture>(selectedRows.length);
-        List<HomePieceOfFurniture> ignoredGroupsFurniture = new ArrayList<HomePieceOfFurniture>();
-        TableModel tableModel = getModel();
-        for (int index : selectedRows) {
-          HomePieceOfFurniture piece = (HomePieceOfFurniture) tableModel.getValueAt(index, 0);
-          if (!ignoredGroupsFurniture.contains(piece)) {
-            // Add to selectedFurniture table model value that stores piece
-            selectedFurniture.add(piece);
-            if (piece instanceof HomeFurnitureGroup) {
-              ignoredGroupsFurniture.addAll(((HomeFurnitureGroup) piece).getAllFurniture());
+        public void selectionChanged(SelectionEvent ev) {
+          updateTableSelectedFurniture(home);     
+          storeExpandedRows(home, controller);
+        }
+      };
+    this.tableSelectionListener = new ListSelectionListener () {
+        public void valueChanged(ListSelectionEvent ev) {
+          selectionByUser = true;
+          int [] selectedRows = getSelectedRows();
+          // Build the list of selected furniture
+          List<HomePieceOfFurniture> selectedFurniture = new ArrayList<HomePieceOfFurniture>(selectedRows.length);
+          List<HomePieceOfFurniture> ignoredGroupsFurniture = new ArrayList<HomePieceOfFurniture>();
+          TableModel tableModel = getModel();
+          for (int index : selectedRows) {
+            HomePieceOfFurniture piece = (HomePieceOfFurniture)tableModel.getValueAt(index, 0);
+            if (!ignoredGroupsFurniture.contains(piece)) {
+              // Add to selectedFurniture table model value that stores piece
+              selectedFurniture.add(piece);
+              if (piece instanceof HomeFurnitureGroup) {
+                ignoredGroupsFurniture.addAll(((HomeFurnitureGroup)piece).getAllFurniture());
+              }
             }
           }
+          // Set the new selection in home with controller
+          controller.setSelectedFurniture(new ArrayList<HomePieceOfFurniture>(selectedFurniture));
+          selectionByUser = false;
         }
-        // Set the new selection in home with controller
-        controller.setSelectedFurniture(new ArrayList<HomePieceOfFurniture>(selectedFurniture));
-        selectionByUser = false;
-      }
-    };
+      };
     getSelectionModel().addListSelectionListener(this.tableSelectionListener);
     home.addSelectionListener(homeSelectionListener);
   }
@@ -734,50 +734,73 @@ public class FurnitureTable extends JTable implements View, Printable {
     final DefaultTableCellRenderer defaultRenderer = new DefaultTableCellRenderer();
     defaultRenderer.setHorizontalAlignment(DefaultTableCellRenderer.CENTER);
     TableCellRenderer printableHeaderRenderer = new TableCellRenderer() {
-        public Component getTableCellRendererComponent(JTable table, Object value, 
-                                   boolean isSelected, boolean hasFocus, int row, int column) {
-          // Delegate rendering to default cell renderer
-          JLabel headerRendererLabel = (JLabel)defaultRenderer.getTableCellRendererComponent(table, value, 
-              isSelected, hasFocus, row, column);
-          // Don't display sort icon
-          headerRendererLabel.setIcon(null);
-          // Change header background and foreground
-          headerRendererLabel.setBackground(Color.LIGHT_GRAY);
-          headerRendererLabel.setForeground(Color.BLACK);
-          headerRendererLabel.setBorder(BorderFactory.createCompoundBorder(
-              BorderFactory.createLineBorder(Color.BLACK),
-              headerRendererLabel.getBorder()));
-          return headerRendererLabel;
-        }
-      };
+      public Component getTableCellRendererComponent(JTable table, Object value,
+                                                     boolean isSelected, boolean hasFocus, int row, int column) {
+        // Delegate rendering to default cell renderer
+        JLabel headerRendererLabel = (JLabel) defaultRenderer.getTableCellRendererComponent(table, value,
+                isSelected, hasFocus, row, column);
+        // Don't display sort icon
+        headerRendererLabel.setIcon(null);
+        // Change header background and foreground
+        headerRendererLabel.setBackground(Color.LIGHT_GRAY);
+        headerRendererLabel.setForeground(Color.BLACK);
+        headerRendererLabel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Color.BLACK),
+                headerRendererLabel.getBorder()));
+        return headerRendererLabel;
+      }
+    };
+    // Check if LEVEL column is already in the visible columns
+    boolean hasLevelColumn = false;
     for (int columnIndex = 0, n = columnModel.getColumnCount(); columnIndex < n; columnIndex++) {
       final TableColumn tableColumn = columnModel.getColumn(columnIndex);
+      if (tableColumn.getIdentifier() == HomePieceOfFurniture.SortableProperty.LEVEL) {
+        hasLevelColumn = true;
+      }
       // Create a printable column from existing table column
       TableColumn printableColumn = new TableColumn();
       printableColumn.setIdentifier(tableColumn.getIdentifier());
       printableColumn.setHeaderValue(tableColumn.getHeaderValue());
       TableCellRenderer printableCellRenderer = new TableCellRenderer() {
-          public Component getTableCellRendererComponent(JTable table, Object value, 
-                                 boolean isSelected, boolean hasFocus, int row, int column) {
-            // Delegate rendering to existing cell renderer 
-            TableCellRenderer cellRenderer = tableColumn.getCellRenderer();
-            Component rendererComponent = cellRenderer.getTableCellRendererComponent(table, value, 
-                isSelected, hasFocus, row, column);
-            if (rendererComponent instanceof JCheckBox) {
-              // Prefer a x sign for boolean values instead of check boxes
-              rendererComponent = defaultRenderer.getTableCellRendererComponent(table, 
-                  ((JCheckBox)rendererComponent).isSelected() ? "x" : "", false, false, row, column);
-            }
-            rendererComponent.setBackground(Color.WHITE);
-            rendererComponent.setForeground(Color.BLACK);
-            return rendererComponent;
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                       boolean isSelected, boolean hasFocus, int row, int column) {
+          // Delegate rendering to existing cell renderer
+          TableCellRenderer cellRenderer = tableColumn.getCellRenderer();
+          Component rendererComponent = cellRenderer.getTableCellRendererComponent(table, value,
+                  isSelected, hasFocus, row, column);
+          if (rendererComponent instanceof JCheckBox) {
+            // Prefer a x sign for boolean values instead of check boxes
+            rendererComponent = defaultRenderer.getTableCellRendererComponent(table,
+                    ((JCheckBox) rendererComponent).isSelected() ? "x" : "", false, false, row, column);
           }
-        };
+          rendererComponent.setBackground(Color.WHITE);
+          rendererComponent.setForeground(Color.BLACK);
+          return rendererComponent;
+        }
+      };
       // Change printable column cell renderer 
       printableColumn.setCellRenderer(printableCellRenderer);
       // Change printable column header renderer
       printableColumn.setHeaderRenderer(printableHeaderRenderer);
       printableColumnModel.addColumn(printableColumn);
+    }
+    // If LEVEL column is not visible on-screen, add it to the printable output
+    if (!hasLevelColumn) {
+      TableColumn printableLevelColumn = new TableColumn();
+      printableLevelColumn.setIdentifier(HomePieceOfFurniture.SortableProperty.LEVEL);
+      printableLevelColumn.setHeaderValue(
+          preferences.getLocalizedString(FurnitureTable.class, "levelColumn"));
+      printableLevelColumn.setCellRenderer(new TableCellRenderer() {
+          public Component getTableCellRendererComponent(JTable table, Object value, 
+                                 boolean isSelected, boolean hasFocus, int row, int column) {
+            HomePieceOfFurniture piece = (HomePieceOfFurniture)value;
+            Level level = piece != null ? piece.getLevel() : null;
+            return defaultRenderer.getTableCellRendererComponent(
+                table, level != null ? level.getName() : null, false, false, row, column);
+          }
+        });
+      printableLevelColumn.setHeaderRenderer(printableHeaderRenderer);
+      printableColumnModel.addColumn(printableLevelColumn);
     }    
     return print(g, pageFormat, pageIndex, printableColumnModel, Color.BLACK);
   }
